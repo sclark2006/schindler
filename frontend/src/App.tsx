@@ -8,7 +8,9 @@ import {
     AlertTriangle,
     PlusCircle,
     Database,
-    Share2
+    Share2,
+    LogOut,
+    User
 } from 'lucide-react';
 import { ServiceRegistry } from './components/ServiceRegistry';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -18,6 +20,8 @@ import { BlocksTable } from './components/BlocksTable';
 import { PlSqlViewer } from './components/PlSqlViewer';
 import { RecordGroupsTable } from './components/RecordGroupsTable';
 import { ArchitectureView } from './components/ArchitectureView';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Login } from './pages/Login';
 
 import { AnalysisResult } from './types/analysis';
 
@@ -26,7 +30,8 @@ interface Message {
     text: string;
 }
 
-const App: React.FC = () => {
+const AuthenticatedApp: React.FC = () => {
+    const { user, logout } = useAuth();
     const [activeTab, setActiveTab] = useState<'upload' | 'analysis' | 'config' | 'registry'>('upload');
     const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'blocks' | 'plsql' | 'record-groups' | 'architecture'>('dashboard');
 
@@ -105,40 +110,59 @@ const App: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
             {/* Header */}
-            <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center">
+            <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center transition-all">
                 <div className="flex items-center gap-2">
                     <Database className="text-blue-400" />
                     <h1 className="text-xl font-bold tracking-tight">Oracle Forms Migration Architect</h1>
                 </div>
-                <div className="flex gap-4">
-                    <button
-                        onClick={() => setActiveTab('upload')}
-                        className={`p-2 rounded-lg transition ${activeTab === 'upload' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
-                        title="Upload"
-                    >
-                        <FileText size={20} />
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('analysis')}
-                        className={`p-2 rounded-lg transition ${activeTab === 'analysis' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
-                        title="Analysis"
-                    >
-                        <BarChart2 size={20} />
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('config')}
-                        className={`p-2 rounded-lg transition ${activeTab === 'config' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
-                        title="Configuration"
-                    >
-                        <Settings size={20} />
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('registry')}
-                        className={`p-2 rounded-lg transition ${activeTab === 'registry' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
-                        title="Registry"
-                    >
-                        <Share2 size={20} />
-                    </button>
+
+                <div className="flex items-center gap-6">
+                    {/* Navigation */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActiveTab('upload')}
+                            className={`p-2 rounded-lg transition ${activeTab === 'upload' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                            title="Upload"
+                        >
+                            <FileText size={20} />
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('analysis')}
+                            className={`p-2 rounded-lg transition ${activeTab === 'analysis' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                            title="Analysis"
+                        >
+                            <BarChart2 size={20} />
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('config')}
+                            className={`p-2 rounded-lg transition ${activeTab === 'config' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                            title="Configuration"
+                        >
+                            <Settings size={20} />
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('registry')}
+                            className={`p-2 rounded-lg transition ${activeTab === 'registry' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                            title="Registry"
+                        >
+                            <Share2 size={20} />
+                        </button>
+                    </div>
+
+                    {/* User Profile */}
+                    <div className="flex items-center gap-3 pl-6 border-l border-slate-700">
+                        <div className="flex items-center gap-2 text-sm text-slate-300">
+                            <User size={16} />
+                            <span className="font-medium">{user?.username}</span>
+                        </div>
+                        <button
+                            onClick={logout}
+                            className="bg-red-500/10 hover:bg-red-600 text-red-400 hover:text-white p-2 rounded-lg transition"
+                            title="Logout"
+                        >
+                            <LogOut size={18} />
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -153,7 +177,7 @@ const App: React.FC = () => {
 
                 {/* TAB: UPLOAD */}
                 {activeTab === 'upload' && (
-                    <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-300 rounded-2xl bg-white">
+                    <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-300 rounded-2xl bg-white animate-in fade-in zoom-in duration-300">
                         <div className="bg-blue-50 p-6 rounded-full mb-4">
                             <FileText size={48} className="text-blue-600" />
                         </div>
@@ -275,6 +299,19 @@ const App: React.FC = () => {
                 onClose={() => setSelectedItem(null)}
             />
         </div>
+    );
+};
+
+const AppContent: React.FC = () => {
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? <AuthenticatedApp /> : <Login />;
+}
+
+const App: React.FC = () => {
+    return (
+        <AuthProvider>
+            <AppContent />
+        </AuthProvider>
     );
 };
 

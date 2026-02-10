@@ -22,3 +22,6 @@ yarn-error.log*
 build/
 .next/
 out/
+
+# Local Data
+example/
