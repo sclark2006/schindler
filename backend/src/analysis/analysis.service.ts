@@ -18,7 +18,7 @@ export class AnalysisService {
         this.adapter = new FormsXmlAdapter();
     }
 
-    async analyzeXml(xmlContent: string): Promise<AnalysisResult> {
+    async analyzeXml(xmlContent: string, projectId: string): Promise<AnalysisResult> {
         try {
             if (!this.adapter.validate(xmlContent)) {
                 throw new Error('Invalid XML structure or unsupported format');
@@ -45,6 +45,7 @@ export class AnalysisService {
             result.originalXmlHash = hash;
             result.complexityScore = complexityScore;
             result.complexityLevel = complexityLevel;
+            result.projectId = projectId;
 
             // Store the raw parsed data
             result.parsedData = data;

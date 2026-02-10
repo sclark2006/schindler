@@ -42,7 +42,7 @@ describe('AnalysisService', () => {
         </Module>
       `;
 
-      const result = await service.analyzeXml(xmlMock);
+      const result = await service.analyzeXml(xmlMock, 'test-project-id');
 
       expect(result.moduleName).toBe('TEST_FORM');
       // Fix: Access properties via parsedData JSONB field
@@ -66,7 +66,7 @@ describe('AnalysisService', () => {
         </Module>
       `;
 
-      const result = await service.analyzeXml(xmlMock);
+      const result = await service.analyzeXml(xmlMock, 'test-project-id');
 
       // (2 * 5) + (1 * 10) + (4 / 10) = 10 + 10 + 0.4 = 20.4
       expect(Number(result.complexityScore)).toBeCloseTo(20.4, 1);
@@ -74,7 +74,7 @@ describe('AnalysisService', () => {
 
     it('should throw error for invalid XML', async () => {
       const invalidXml = '<Module Name="BROKEN">Unclosed Tag';
-      await expect(service.analyzeXml(invalidXml)).rejects.toThrow();
+      await expect(service.analyzeXml(invalidXml, 'test-project-id')).rejects.toThrow();
     });
 
     it('should extract Record Groups correctly', async () => {
@@ -85,7 +85,7 @@ describe('AnalysisService', () => {
           </RecordGroup>
         </Module>
       `;
-      const result = await service.analyzeXml(xmlWithRecordGroups);
+      const result = await service.analyzeXml(xmlWithRecordGroups, 'test-project-id');
       expect(result.parsedData.recordGroups).toHaveLength(1);
       expect(result.parsedData.recordGroups[0].name).toBe('RG_1');
       expect(result.parsedData.recordGroups[0].query).toBe('SELECT * FROM DUAL');
@@ -108,7 +108,7 @@ describe('AnalysisService', () => {
           </Trigger>
         </Module>
       `;
-      const result = await service.analyzeXml(xmlComplex);
+      const result = await service.analyzeXml(xmlComplex, 'test-project-id');
       expect(result.parsedData.complexityCandidates).toBeDefined();
 
       // Stored Procedure Candidate
@@ -136,7 +136,7 @@ describe('AnalysisService', () => {
                 <ProgramUnit Name="TOP_LEVEL_PROC" ProgramUnitText="PROCEDURE P IS BEGIN NULL; END;"/>
             </Module>`;
 
-      const result = await service.analyzeXml(xml);
+      const result = await service.analyzeXml(xml, 'test-project-id');
 
       // Should find the ProgramUnit
       expect(result.parsedData.programUnits.length).toBe(1);

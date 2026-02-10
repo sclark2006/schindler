@@ -6,10 +6,13 @@ import { AppService } from './app.service';
 import { AnalysisModule } from './analysis/analysis.module';
 import { GovernanceModule } from './governance/governance.module';
 import { AuthModule } from './auth/auth.module';
+import { AdoModule } from './integrations/ado/ado.module';
 import { AnalysisResult } from './analysis/entities/analysis-result.entity';
 import { DiscoveredService } from './governance/entities/discovered-service.entity';
 import { BusinessDomain } from './governance/entities/business-domain.entity';
 import { MigrationRule } from './governance/entities/migration-rule.entity';
+import { SystemConfig } from './governance/entities/system-config.entity';
+import { Project } from './governance/entities/project.entity';
 
 @Module({
     imports: [
@@ -21,12 +24,14 @@ import { MigrationRule } from './governance/entities/migration-rule.entity';
             username: process.env.DATABASE_USER || 'schindler',
             password: process.env.DATABASE_PASSWORD || 'password123',
             database: process.env.DATABASE_NAME || 'schindler_db',
-            entities: [AnalysisResult, DiscoveredService, BusinessDomain, MigrationRule],
-            synchronize: true, // Auto-create tables (dev only)
+            entities: [AnalysisResult, DiscoveredService, BusinessDomain, MigrationRule, SystemConfig, Project],
+            synchronize: false, // Use migrations
+            migrationsRun: true, // Auto-run migrations on startup
         }),
         AnalysisModule,
         GovernanceModule,
         AuthModule,
+        AdoModule,
     ],
     controllers: [AppController],
     providers: [AppService],

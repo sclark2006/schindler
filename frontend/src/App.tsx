@@ -20,8 +20,12 @@ import { BlocksTable } from './components/BlocksTable';
 import { PlSqlViewer } from './components/PlSqlViewer';
 import { RecordGroupsTable } from './components/RecordGroupsTable';
 import { ArchitectureView } from './components/ArchitectureView';
+import { TicketCreationModal } from './components/TicketCreationModal';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ProjectProvider, useProject } from './context/ProjectContext';
+import { ProjectSelector } from './components/ProjectSelector';
 import { Login } from './pages/Login';
+import { BrowserRouter } from 'react-router-dom';
 
 import { AnalysisResult } from './types/analysis';
 
@@ -30,29 +34,36 @@ interface Message {
     text: string;
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const AuthenticatedApp: React.FC = () => {
     const { user, logout } = useAuth();
+    const { currentProject } = useProject();
     const [activeTab, setActiveTab] = useState<'upload' | 'analysis' | 'config' | 'registry'>('upload');
-    const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'blocks' | 'plsql' | 'record-groups' | 'architecture'>('dashboard');
-
-    // ... (rest of the file until sub-tabs)
-
-
-    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-    const [selectedItem, setSelectedItem] = useState<any>(null);
-    const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<Message | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+    const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'architecture' | 'blocks' | 'plsql' | 'record-groups'>('dashboard');
+    const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [ticketModal, setTicketModal] = useState({ isOpen: false, title: '', description: '' });
 
-    // API URL - Environment variable or default
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const openTicketModal = (title: string, description?: string) => {
+        setTicketModal({ isOpen: true, title, description: description || '' });
+    };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
+        if (!currentProject) {
+            setMessage({ type: 'error', text: 'Por favor selecciona un proyecto primero.' });
+            return;
+        }
+
         setLoading(true);
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('projectId', currentProject.id);
 
         try {
             const response = await axios.post<AnalysisResult>(`${API_URL}/analysis/upload`, formData, {
@@ -70,11 +81,6 @@ const AuthenticatedApp: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const createDevOpsTicket = (item: string) => {
-        setMessage({ type: 'success', text: `Ticket creado en Azure DevOps para: ${item}` });
-        setTimeout(() => setMessage(null), 3000);
     };
 
     const registerService = async (item: any, type: string) => {
@@ -114,6 +120,9 @@ const AuthenticatedApp: React.FC = () => {
                 <div className="flex items-center gap-2">
                     <Database className="text-blue-400" />
                     <h1 className="text-xl font-bold tracking-tight">Oracle Forms Migration Architect</h1>
+                    <div className="ml-6 border-l border-slate-700 pl-6">
+                        <ProjectSelector />
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-6">
@@ -251,7 +260,7 @@ const AuthenticatedApp: React.FC = () => {
                             <BlocksTable
                                 blocks={analysisResult.parsedData.blocks}
                                 setSelectedItem={setSelectedItem}
-                                createDevOpsTicket={createDevOpsTicket}
+                                createDevOpsTicket={openTicketModal}
                             />
                         )}
 
@@ -261,6 +270,7 @@ const AuthenticatedApp: React.FC = () => {
                                 programUnits={analysisResult.parsedData.programUnits}
                                 setSelectedItem={setSelectedItem}
                                 registerService={registerService}
+                                createDevOpsTicket={openTicketModal}
                             />
                         )}
 
@@ -268,7 +278,7 @@ const AuthenticatedApp: React.FC = () => {
                             <RecordGroupsTable
                                 recordGroups={analysisResult.parsedData.recordGroups}
                                 registerService={registerService}
-                                createDevOpsTicket={createDevOpsTicket}
+                                createDevOpsTicket={openTicketModal}
                             />
                         )}
                     </div>
@@ -298,6 +308,13 @@ const AuthenticatedApp: React.FC = () => {
                 isOpen={!!selectedItem}
                 onClose={() => setSelectedItem(null)}
             />
+            <TicketCreationModal
+                isOpen={ticketModal.isOpen}
+                onClose={() => setTicketModal({ ...ticketModal, isOpen: false })}
+                initialTitle={ticketModal.title}
+                initialDescription={ticketModal.description}
+                projectId={currentProject?.id}
+            />
         </div>
     );
 };
@@ -309,9 +326,13 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
     return (
-        <AuthProvider>
-            <AppContent />
-        </AuthProvider>
+        <BrowserRouter>
+            <AuthProvider>
+                <ProjectProvider>
+                    <AppContent />
+                </ProjectProvider>
+            </AuthProvider>
+        </BrowserRouter>
     );
 };
 

@@ -6,9 +6,10 @@ interface PlSqlViewerProps {
     programUnits: any[];
     setSelectedItem: (item: any) => void;
     registerService: (item: any, type: string) => void;
+    createDevOpsTicket: (title: string, description?: string) => void;
 }
 
-export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers, programUnits, setSelectedItem, registerService }) => {
+export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers, programUnits, setSelectedItem, registerService, createDevOpsTicket }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredTriggers = triggers.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -53,6 +54,12 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers, programUnits
                                         Ver Código <ArrowRight size={10} />
                                     </span>
                                 </div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Trigger: ${t.name}`, `Analyze and refactor logic for trigger ${t.name} in block ${t.parentBlock}. LOC: ${t.loc}`); }}
+                                    className="mt-2 w-full text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition opacity-0 group-hover:opacity-100"
+                                >
+                                    Crear Ticket
+                                </button>
                             </div>
                         ))}
                     </div>
@@ -83,6 +90,12 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers, programUnits
                                         Ver Código <ArrowRight size={10} />
                                     </span>
                                 </div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Program Unit: ${p.name}`, `Logic extraction for ${p.name}. LOC: ${p.loc}`); }}
+                                    className="mt-2 w-full text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition opacity-0 group-hover:opacity-100"
+                                >
+                                    Crear Ticket
+                                </button>
                             </div>
                         ))}
                     </div>

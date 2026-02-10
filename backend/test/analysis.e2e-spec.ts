@@ -6,6 +6,7 @@ import { join } from 'path';
 
 describe('AnalysisController (e2e)', () => {
     let app: INestApplication;
+    let jwtToken: string;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -14,6 +15,13 @@ describe('AnalysisController (e2e)', () => {
 
         app = moduleFixture.createNestApplication();
         await app.init();
+
+        // Login to get token
+        const loginRes = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ username: 'admin', password: 'password' });
+
+        jwtToken = loginRes.body.access_token;
     });
 
     afterAll(async () => {
@@ -42,7 +50,9 @@ describe('AnalysisController (e2e)', () => {
 
         return request(app.getHttpServer())
             .post('/analysis/upload')
+            .set('Authorization', `Bearer ${jwtToken}`)
             .attach('file', buffer, 'test_form.xml')
+            .field('projectId', 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11')
             .expect(201)
             .expect((res) => {
                 const body = res.body;
@@ -63,6 +73,7 @@ describe('AnalysisController (e2e)', () => {
     it('/governance/register (POST) - should register a service', () => {
         return request(app.getHttpServer())
             .post('/governance/register')
+            .set('Authorization', `Bearer ${jwtToken}`)
             .send({
                 originalName: 'TEST_PROCEDURE',
                 sourceType: 'PROGRAM_UNIT',
