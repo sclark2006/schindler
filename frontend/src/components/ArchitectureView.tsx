@@ -128,7 +128,7 @@ const getGridLayout = (nodes: Node[], columns = 2) => {
 
 // ---- MAIN DIAGRAM COMPONENT ----
 const C4Diagram = ({ analysisResult }: { analysisResult: AnalysisResult }) => {
-    const { blocks, recordGroups, complexityCandidates } = analysisResult.parsedData;
+    const { blocks = [], recordGroups = [], complexityCandidates = [] } = analysisResult.parsedData || {};
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const { fitView } = useReactFlow();

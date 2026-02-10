@@ -44,7 +44,7 @@ export class FormsXmlAdapter implements IAnalysisAdapter {
         const complexityCandidates = this.analyzePatternComplexity(triggers, programUnits);
 
         return {
-            moduleName: moduleData.Name || 'Unknown',
+            moduleName: formModule.Name || moduleData.Name || 'Unknown',
             blocks: blocks.map((b: any) => ({
                 name: b.Name,
                 dataSource: this.decodeXmlEntities(b.QueryDataSourceName || 'None'),

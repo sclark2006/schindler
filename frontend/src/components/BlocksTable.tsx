@@ -7,7 +7,7 @@ interface BlocksTableProps {
     createDevOpsTicket: (title: string, description?: string) => void;
 }
 
-export const BlocksTable: React.FC<BlocksTableProps> = ({ blocks, setSelectedItem, createDevOpsTicket }) => {
+export const BlocksTable: React.FC<BlocksTableProps> = ({ blocks = [], setSelectedItem, createDevOpsTicket }) => {
     const dataBlocks = blocks.filter(b => b.dataSource && b.dataSource !== 'None' && b.dataSource !== 'Unknown');
 
     return (

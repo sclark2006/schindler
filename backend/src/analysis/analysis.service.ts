@@ -59,4 +59,19 @@ export class AnalysisService {
             throw new BadRequestException('Failed to analyze content: ' + error.message);
         }
     }
+
+    async findAllByProject(projectId: string): Promise<AnalysisResult[]> {
+        return this.analysisRepository.find({
+            where: { projectId },
+            order: { createdAt: 'DESC' }
+        });
+    }
+
+    async findOne(id: string): Promise<AnalysisResult> {
+        return this.analysisRepository.findOne({ where: { id } });
+    }
+
+    async delete(id: string): Promise<void> {
+        await this.analysisRepository.delete(id);
+    }
 }

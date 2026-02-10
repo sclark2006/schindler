@@ -1,4 +1,4 @@
-import { Controller, Post, UploadedFile, UseInterceptors, BadRequestException, UseGuards, Body } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, UploadedFile, UseInterceptors, BadRequestException, UseGuards, Body } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AnalysisService } from './analysis.service';
 import { Express } from 'express';
@@ -23,5 +23,20 @@ export class AnalysisController {
 
         const xmlContent = file.buffer.toString('utf-8');
         return this.analysisService.analyzeXml(xmlContent, effectiveProjectId);
+    }
+
+    @Get('project/:projectId')
+    async findAllByProject(@Param('projectId') projectId: string) {
+        return this.analysisService.findAllByProject(projectId);
+    }
+
+    @Get(':id')
+    async findOne(@Param('id') id: string) {
+        return this.analysisService.findOne(id);
+    }
+
+    @Delete(':id')
+    async delete(@Param('id') id: string) {
+        return this.analysisService.delete(id);
     }
 }

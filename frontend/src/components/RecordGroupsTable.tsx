@@ -7,7 +7,7 @@ interface RecordGroupsTableProps {
     createDevOpsTicket: (item: string) => void;
 }
 
-export const RecordGroupsTable: React.FC<RecordGroupsTableProps> = ({ recordGroups, registerService, createDevOpsTicket }) => {
+export const RecordGroupsTable: React.FC<RecordGroupsTableProps> = ({ recordGroups = [], registerService, createDevOpsTicket }) => {
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">

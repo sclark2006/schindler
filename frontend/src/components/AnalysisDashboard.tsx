@@ -32,10 +32,10 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
     return (
         <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card title="Puntos de Función" value={analysisResult.complexityScore.toFixed(0)} sub="Score Calculado" icon={<Cpu className="text-purple-500" />} />
-                <Card title="Nivel de Complejidad" value={analysisResult.complexityLevel} sub="Categoría" icon={<BarChart2 className="text-blue-500" />} />
-                <Card title="Bloques / Tablas" value={analysisResult.parsedData.stats.totalBlocks} sub="Entidades de Datos" icon={<Database className="text-green-500" />} />
-                <Card title="Líneas PL/SQL" value={analysisResult.parsedData.stats.totalLoc} sub="Total Código Legacy" icon={<Code className="text-orange-500" />} />
+                <Card title="Puntos de Función" value={Number(analysisResult.complexityScore || 0).toFixed(0)} sub="Score Calculado" icon={<Cpu className="text-purple-500" />} />
+                <Card title="Nivel de Complejidad" value={analysisResult.complexityLevel || 'N/A'} sub="Categoría" icon={<BarChart2 className="text-blue-500" />} />
+                <Card title="Bloques / Tablas" value={analysisResult.parsedData?.stats?.totalBlocks || 0} sub="Entidades de Datos" icon={<Database className="text-green-500" />} />
+                <Card title="Líneas PL/SQL" value={analysisResult.parsedData?.stats?.totalLoc || 0} sub="Total Código Legacy" icon={<Code className="text-orange-500" />} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -48,7 +48,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
                             Candidatos a Refactorización Compleja
                         </h3>
                         <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                            {analysisResult.parsedData.complexityCandidates.length === 0 ? (
+                            {(!analysisResult.parsedData?.complexityCandidates || analysisResult.parsedData.complexityCandidates.length === 0) ? (
                                 <p className="text-slate-500 italic">No se detectaron patrones complejos obvios.</p>
                             ) : (
                                 analysisResult.parsedData.complexityCandidates.map((c: any, i: number) => (
