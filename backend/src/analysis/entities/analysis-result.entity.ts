@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Project } from '../../governance/entities/project.entity';
 
 @Entity()
 export class AnalysisResult {
@@ -22,4 +23,10 @@ export class AnalysisResult {
 
     @CreateDateColumn()
     createdAt: Date;
+
+    @Column({ nullable: true })
+    projectId: string;
+
+    @ManyToOne(() => Project, (project) => project.analyses)
+    project: Project;
 }
