@@ -9,7 +9,7 @@ interface PlSqlViewerProps {
     createDevOpsTicket: (title: string, description?: string) => void;
 }
 
-export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers, programUnits, setSelectedItem, registerService, createDevOpsTicket }) => {
+export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], programUnits = [], setSelectedItem, registerService, createDevOpsTicket }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredTriggers = triggers.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));

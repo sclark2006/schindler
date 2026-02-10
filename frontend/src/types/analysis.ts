@@ -54,5 +54,6 @@ export interface AnalysisResult {
     moduleName: string;
     complexityScore: number;
     complexityLevel: string;
+    createdAt: string;
     parsedData: ParsedData;
 }
