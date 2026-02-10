@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # Base de Datos PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: schindler_db
+    environment:
+      POSTGRES_USER: schindler
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: schindler_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    networks:
+      - schindler_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U schindler -d schindler_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend NestJS
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: schindler_backend
+    environment:
+      DATABASE_HOST: db
+      DATABASE_PORT: 5432
+      DATABASE_USER: schindler
+      DATABASE_PASSWORD: password123
+      DATABASE_NAME: schindler_db
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - schindler_net
+    command: npm run start:dev
+
+  # Frontend React+Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: schindler_frontend
+    environment:
+      VITE_API_URL: http://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - schindler_net
+    command: npm run dev -- --host
+
+networks:
+  schindler_net:
+    driver: bridge
+
+volumes:
+  postgres_data:

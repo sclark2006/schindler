@@ -1,0 +1,24 @@
+# Node
+node_modules/
+dist/
+coverage/
+.env
+
+# Docker
+docker-compose.override.yml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build
+build/
+.next/
+out/

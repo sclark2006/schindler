@@ -1,0 +1,382 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    FileText,
+    Settings,
+    BarChart2,
+    Code,
+    Server,
+    CheckCircle,
+    AlertTriangle,
+    PlusCircle,
+    Database,
+    ArrowRight,
+    ChevronRight,
+    Terminal,
+    Cpu
+} from 'lucide-react';
+
+const App = () => {
+    const [activeTab, setActiveTab] = useState('upload');
+    const [xmlContent, setXmlContent] = useState(null);
+    const [parsedData, setParsedData] = useState(null);
+    const [analysis, setAnalysis] = useState(null);
+    const [config, setConfig] = useState({
+        mcpUrl: 'http://localhost:8080',
+        devOpsOrg: '',
+        devOpsProject: '',
+        devOpsToken: '',
+        ordsBaseUrl: 'https://oracle-ords.internal/api/v1/'
+    });
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState(null);
+
+    // Simulación de guardado de configuración
+    const saveConfig = (e) => {
+        e.preventDefault();
+        setMessage({ type: 'success', text: 'Configuración guardada correctamente.' });
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    // Lógica de procesamiento de XML
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setLoading(true);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const text = event.target.result;
+            setXmlContent(text);
+            parseFormsXml(text);
+        };
+        reader.readAsText(file);
+    };
+
+    const parseFormsXml = (xmlText) => {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
+
+        // Extraer estructuras básicas de Oracle Forms
+        const blocks = Array.from(xmlDoc.getElementsByTagName("Block")).map(b => ({
+            name: b.getAttribute("Name"),
+            queryDataSource: b.getAttribute("QueryDataSourceName") || "N/A",
+            items: b.getElementsByTagName("Item").length
+        }));
+
+        const triggers = Array.from(xmlDoc.getElementsByTagName("Trigger")).map(t => ({
+            name: t.getAttribute("Name"),
+            text: t.textContent || ""
+        }));
+
+        const programUnits = Array.from(xmlDoc.getElementsByTagName("ProgramUnit")).map(p => ({
+            name: p.getAttribute("Name"),
+            text: p.textContent || ""
+        }));
+
+        const data = {
+            moduleName: xmlDoc.getElementsByTagName("Module")[0]?.getAttribute("Name") || "Módulo Desconocido",
+            blocks,
+            triggers,
+            programUnits,
+            stats: {
+                blocks: blocks.length,
+                triggers: triggers.length,
+                programUnits: programUnits.length,
+                totalLoc: triggers.reduce((acc, t) => acc + t.text.split('\n').length, 0) +
+                    programUnits.reduce((acc, p) => acc + p.text.split('\n').length, 0)
+            }
+        };
+
+        setParsedData(data);
+        generateAnalysis(data);
+        setLoading(false);
+        setActiveTab('analysis');
+    };
+
+    const generateAnalysis = (data) => {
+        // Análisis de complejidad simple
+        const complexityScore = (data.stats.triggers * 5) + (data.stats.programUnits * 10) + (data.stats.totalLoc / 10);
+        let complexityLevel = "Baja";
+        if (complexityScore > 500) complexityLevel = "Muy Alta";
+        else if (complexityScore > 200) complexityLevel = "Alta";
+        else if (complexityScore > 100) complexityLevel = "Media";
+
+        const recommendations = [];
+        if (data.stats.totalLoc > 1000) recommendations.push("Lógica de negocio pesada detectada: Migrar lógica compleja a Stored Procedures.");
+        if (data.triggers.some(t => t.name.includes('WHEN-VALIDATE'))) recommendations.push("Validaciones de campo detectadas: Implementar validaciones en NestJS (Zod/Class Validator).");
+        if (data.blocks.length > 5) recommendations.push("Formulario complejo: Considerar dividirlo en múltiples vistas de React o componentes con estados independientes.");
+
+        setAnalysis({
+            score: complexityScore.toFixed(0),
+            level: complexityLevel,
+            recommendations,
+            services: data.blocks.map(b => ({
+                block: b.name,
+                source: b.queryDataSource,
+                suggestedService: `GET /${b.name.toLowerCase()}`,
+                existsInOrds: Math.random() > 0.5,
+                ordsUri: `ords/schema/v1/${b.name.toLowerCase()}`
+            }))
+        });
+    };
+
+    const createDevOpsTicket = (item) => {
+        setMessage({ type: 'success', text: `Ticket creado en Azure DevOps para: ${item}` });
+        setTimeout(() => setMessage(null), 3000);
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+            {/* Header */}
+            <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                    <Database className="text-blue-400" />
+                    <h1 className="text-xl font-bold tracking-tight">Oracle Forms Migration Architect</h1>
+                </div>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => setActiveTab('upload')}
+                        className={`p-2 rounded-lg transition ${activeTab === 'upload' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                    >
+                        <FileText size={20} />
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('analysis')}
+                        className={`p-2 rounded-lg transition ${activeTab === 'analysis' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                    >
+                        <BarChart2 size={20} />
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('config')}
+                        className={`p-2 rounded-lg transition ${activeTab === 'config' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                    >
+                        <Settings size={20} />
+                    </button>
+                </div>
+            </header>
+
+            {/* Main Content */}
+            <main className="max-w-6xl mx-auto p-6">
+                {message && (
+                    <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800'}`}>
+                        <CheckCircle size={18} />
+                        {message.text}
+                    </div>
+                )}
+
+                {/* TAB: UPLOAD */}
+                {activeTab === 'upload' && (
+                    <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-300 rounded-2xl bg-white">
+                        <div className="bg-blue-50 p-6 rounded-full mb-4">
+                            <FileText size={48} className="text-blue-600" />
+                        </div>
+                        <h2 className="text-2xl font-semibold mb-2">Cargar Módulo XML</h2>
+                        <p className="text-slate-500 mb-6 text-center max-w-md">
+                            Exporta tu archivo .FMB a formato XML usando Forms2XML y súbelo aquí para comenzar el análisis.
+                        </p>
+                        <label className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl cursor-pointer transition flex items-center gap-2 font-medium">
+                            <PlusCircle size={20} />
+                            Seleccionar Archivo XML
+                            <input type="file" className="hidden" accept=".xml" onChange={handleFileUpload} />
+                        </label>
+                        {loading && <p className="mt-4 animate-pulse text-blue-600">Procesando metadatos...</p>}
+                    </div>
+                )}
+
+                {/* TAB: ANALYSIS */}
+                {activeTab === 'analysis' && parsedData && (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <Card title="Puntos de Función" value={analysis.score} sub="Estimación de complejidad" icon={<Cpu className="text-purple-500" />} />
+                            <Card title="Nivel de Esfuerzo" value={analysis.level} sub="Categoría de migración" icon={<BarChart2 className="text-blue-500" />} />
+                            <Card title="Bloques Data" value={parsedData.stats.blocks} sub="Componentes React necesarios" icon={<Database className="text-green-500" />} />
+                            <Card title="Líneas PL/SQL" value={parsedData.stats.totalLoc} sub="A procesar en NestJS/DB" icon={<Code className="text-orange-500" />} />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Descomposición de Código */}
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                    <Terminal size={20} className="text-slate-700" />
+                                    Estructuras y Código Fuente
+                                </h3>
+                                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                                    <div className="p-4 bg-slate-50 rounded-xl">
+                                        <h4 className="font-semibold text-sm uppercase text-slate-500 mb-2">Program Units (Globales)</h4>
+                                        {parsedData.programUnits.map((pu, i) => (
+                                            <div key={i} className="flex justify-between items-center py-1 border-b border-slate-200 last:border-0">
+                                                <span className="font-mono text-sm">{pu.name}</span>
+                                                <span className="text-xs text-slate-400">{pu.text.split('\n').length} líneas</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="p-4 bg-slate-50 rounded-xl">
+                                        <h4 className="font-semibold text-sm uppercase text-slate-500 mb-2">Triggers Principales</h4>
+                                        {parsedData.triggers.slice(0, 10).map((tr, i) => (
+                                            <div key={i} className="flex justify-between items-center py-1 border-b border-slate-200 last:border-0">
+                                                <span className="font-mono text-sm">{tr.name}</span>
+                                                <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded">Legacy Logic</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Recomendaciones */}
+                            <div className="space-y-6">
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                        <CheckCircle size={20} className="text-green-600" />
+                                        Buenas Prácticas y Guía de Migración
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {analysis.recommendations.map((rec, i) => (
+                                            <div key={i} className="flex gap-3 p-3 bg-blue-50 rounded-xl items-start">
+                                                <ArrowRight size={18} className="text-blue-600 mt-0.5 shrink-0" />
+                                                <p className="text-sm text-slate-700">{rec}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                                        <Server size={20} className="text-indigo-600" />
+                                        Propuesta de Servicios (BFF / ORDS)
+                                    </h3>
+                                    <div className="space-y-3">
+                                        {analysis.services.map((svc, i) => (
+                                            <div key={i} className="border border-slate-100 p-4 rounded-xl flex flex-col gap-2">
+                                                <div className="flex justify-between items-center">
+                                                    <span className="font-bold text-sm">Bloque: {svc.block}</span>
+                                                    {svc.existsInOrds ? (
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-green-100 text-green-700 px-2 py-1 rounded-full">ORDS Activo</span>
+                                                    ) : (
+                                                        <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-1 rounded-full">Requiere PL/SQL Wrapper</span>
+                                                    )}
+                                                </div>
+                                                <code className="text-xs bg-slate-900 text-blue-300 p-2 rounded block truncate">
+                                                    {svc.existsInOrds ? svc.ordsUri : `POST /generate-sp/${svc.block.toLowerCase()}`}
+                                                </code>
+                                                {!svc.existsInOrds && (
+                                                    <button
+                                                        onClick={() => createDevOpsTicket(`Crear servicio para ${svc.block}`)}
+                                                        className="text-xs flex items-center gap-1 text-blue-600 hover:underline font-medium mt-1"
+                                                    >
+                                                        <PlusCircle size={14} /> Crear ticket en DevOps
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB: CONFIGURATION */}
+                {activeTab === 'config' && (
+                    <div className="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                            <Settings className="text-slate-400" />
+                            Configuración del Entorno
+                        </h2>
+                        <form onSubmit={saveConfig} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700">Servidor MCP (Protocolo Contexto)</label>
+                                    <input
+                                        type="text"
+                                        value={config.mcpUrl}
+                                        onChange={(e) => setConfig({ ...config, mcpUrl: e.target.value })}
+                                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                                        placeholder="http://..."
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-semibold text-slate-700">Endpoint ORDS Base</label>
+                                    <input
+                                        type="text"
+                                        value={config.ordsBaseUrl}
+                                        onChange={(e) => setConfig({ ...config, ordsBaseUrl: e.target.value })}
+                                        className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="border-t pt-6">
+                                <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                    Integración Azure DevOps
+                                </h3>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm text-slate-600">Organización</label>
+                                            <input
+                                                type="text"
+                                                value={config.devOpsOrg}
+                                                onChange={(e) => setConfig({ ...config, devOpsOrg: e.target.value })}
+                                                className="w-full p-2 border rounded-lg"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm text-slate-600">Proyecto</label>
+                                            <input
+                                                type="text"
+                                                value={config.devOpsProject}
+                                                onChange={(e) => setConfig({ ...config, devOpsProject: e.target.value })}
+                                                className="w-full p-2 border rounded-lg"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm text-slate-600">Personal Access Token (PAT)</label>
+                                        <input
+                                            type="password"
+                                            value={config.devOpsToken}
+                                            onChange={(e) => setConfig({ ...config, devOpsToken: e.target.value })}
+                                            className="w-full p-2 border rounded-lg"
+                                            placeholder="••••••••••••••••"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button
+                                type="submit"
+                                className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-slate-800 transition shadow-lg shadow-slate-200"
+                            >
+                                Guardar Cambios
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {activeTab === 'analysis' && !parsedData && (
+                    <div className="text-center py-20">
+                        <AlertTriangle className="mx-auto text-amber-500 mb-4" size={48} />
+                        <h3 className="text-xl font-bold">No hay datos para analizar</h3>
+                        <p className="text-slate-500">Sube un archivo XML en la pestaña de carga primero.</p>
+                    </div>
+                )}
+            </main>
+        </div>
+    );
+};
+
+const Card = ({ title, value, sub, icon }) => (
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-start gap-4">
+        <div className="bg-slate-50 p-3 rounded-xl">
+            {icon}
+        </div>
+        <div>
+            <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wider">{title}</h4>
+            <div className="text-2xl font-bold mt-1">{value}</div>
+            <p className="text-xs text-slate-400 mt-1">{sub}</p>
+        </div>
+    </div>
+);
+
+export default App;
