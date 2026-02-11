@@ -24,4 +24,7 @@ export class Project {
 
     @OneToMany(() => SystemConfig, (config) => config.project)
     configs: SystemConfig[];
+
+    @Column({ type: 'jsonb', nullable: true })
+    aiConfig: object;
 }

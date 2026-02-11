@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
 import { GovernanceService } from './governance.service';
 import { DiscoveredService } from './entities/discovered-service.entity';
 import { SystemConfig } from './entities/system-config.entity';
+import { BusinessDomain } from './entities/business-domain.entity';
+import { MigrationRule } from './entities/migration-rule.entity';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('governance')
@@ -27,5 +29,25 @@ export class GovernanceController {
     @Post('config')
     async saveConfig(@Body() body: { key: string; value: string; description?: string; isSecret?: boolean; projectId?: string }): Promise<SystemConfig> {
         return this.governanceService.saveConfig(body.key, body.value, body.description, body.isSecret, body.projectId);
+    }
+
+    @Get('domains')
+    async getDomains(): Promise<BusinessDomain[]> {
+        return this.governanceService.getDomains();
+    }
+
+    @Post('domains')
+    async createDomain(@Body() body: Partial<BusinessDomain>): Promise<BusinessDomain> {
+        return this.governanceService.createDomain(body);
+    }
+
+    @Get('rules')
+    async getRules(): Promise<MigrationRule[]> {
+        return this.governanceService.getRules();
+    }
+
+    @Post('rules')
+    async createRule(@Body() body: Partial<MigrationRule>): Promise<MigrationRule> {
+        return this.governanceService.createRule(body);
     }
 }

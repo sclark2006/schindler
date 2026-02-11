@@ -74,4 +74,11 @@ export class AnalysisService {
     async delete(id: string): Promise<void> {
         await this.analysisRepository.delete(id);
     }
+
+    async updateSummary(id: string, summary: string): Promise<AnalysisResult> {
+        const analysis = await this.analysisRepository.findOne({ where: { id } });
+        if (!analysis) throw new Error('Analysis not found');
+        analysis.summary = summary;
+        return this.analysisRepository.save(analysis);
+    }
 }
