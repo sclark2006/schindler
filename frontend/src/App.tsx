@@ -15,7 +15,7 @@ import {
     HelpCircle
 } from 'lucide-react';
 import { ServiceRegistry } from './components/ServiceRegistry';
-import { SettingsPanel } from './components/SettingsPanel';
+import { ProjectSettings } from './components/ProjectSettings';
 import { DetailsModal } from './components/DetailsModal';
 import { AnalysisDashboard } from './components/AnalysisDashboard';
 import { BlocksTable } from './components/BlocksTable';
@@ -28,7 +28,8 @@ import { ProjectProvider, useProject } from './context/ProjectContext';
 import { ProjectSelector } from './components/ProjectSelector';
 import { ProjectDashboard } from './components/ProjectDashboard';
 import { Login } from './pages/Login';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BlockDetailView } from './views/BlockDetailView';
 
 import { AnalysisResult } from './types/analysis';
 
@@ -39,19 +40,27 @@ interface Message {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+
 const AuthenticatedApp: React.FC = () => {
     const { user, logout, token } = useAuth();
     const { currentProject } = useProject();
-    const [activeTab, setActiveTab] = useState<'project' | 'config' | 'registry'>('project');
+    const [activeTab, setActiveTab] = useState<'project' | 'registry' | 'settings'>('project');
 
     // Project Flow State: 'dashboard' | 'upload' | 'detail'
     const [projectView, setProjectView] = useState<'dashboard' | 'upload' | 'detail'>('dashboard');
 
     const [message, setMessage] = useState<Message | null>(null);
+
+    // Toast helper
+    const showToast = (type: 'success' | 'error', text: string) => {
+        setMessage({ type, text });
+        setTimeout(() => setMessage(null), 3000);
+    };
     const [loading, setLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
     const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'architecture' | 'blocks' | 'plsql' | 'record-groups'>('dashboard');
     const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [selectedBlock, setSelectedBlock] = useState<string | null>(null); // New state for SPA block navigation
     const [ticketModal, setTicketModal] = useState({ isOpen: false, title: '', description: '' });
     const [showAbout, setShowAbout] = useState(false);
 
@@ -71,7 +80,7 @@ const AuthenticatedApp: React.FC = () => {
             setAnalysisSubTab('dashboard');
         } catch (error) {
             console.error(error);
-            setMessage({ type: 'error', text: 'Error al cargar el análisis.' });
+            showToast('error', 'Error loading analysis.');
         } finally {
             setLoading(false);
         }
@@ -86,7 +95,7 @@ const AuthenticatedApp: React.FC = () => {
         if (!file) return;
 
         if (!currentProject) {
-            setMessage({ type: 'error', text: 'Por favor selecciona un proyecto primero.' });
+            showToast('error', 'Please select a project first.');
             return;
         }
 
@@ -105,10 +114,10 @@ const AuthenticatedApp: React.FC = () => {
 
             setAnalysisResult(response.data);
             setProjectView('detail');
-            setMessage({ type: 'success', text: 'Análisis completado exitosamente.' });
+            showToast('success', 'Analysis completed successfully.');
         } catch (error) {
             console.error('Error uploading file:', error);
-            setMessage({ type: 'error', text: 'Error al analizar el archivo. Asegúrate de que el Backend esté corriendo.' });
+            showToast('error', 'Error analyzing file. Make sure the backend is running.');
         } finally {
             setLoading(false);
         }
@@ -119,12 +128,12 @@ const AuthenticatedApp: React.FC = () => {
         // The analysis is already saved in the DB (jsonb) upon upload.
         // This action validates the workflow and returns to dashboard.
         setProjectView('dashboard');
-        setMessage({ type: 'success', text: 'Análisis vinculado al proyecto y guardado.' });
+        showToast('success', 'Analysis linked to project and saved.');
     };
 
     const handleDiscardAnalysis = async () => {
         if (!analysisResult || !token) return;
-        if (!confirm('¿Estás seguro de descartar este análisis? Se eliminará permanentemente.')) return;
+        if (!confirm('Are you sure you want to discard this analysis? It will be permanently deleted.')) return;
 
         try {
             await axios.delete(`${API_URL}/analysis/${analysisResult.id}`, {
@@ -132,10 +141,10 @@ const AuthenticatedApp: React.FC = () => {
             });
             setAnalysisResult(null);
             setProjectView('dashboard');
-            setMessage({ type: 'success', text: 'Análisis descartado.' });
+            showToast('success', 'Analysis discarded.');
         } catch (error) {
             console.error(error);
-            setMessage({ type: 'error', text: 'Error al eliminar análisis.' });
+            showToast('error', 'Error deleting analysis.');
         }
     };
 
@@ -147,13 +156,14 @@ const AuthenticatedApp: React.FC = () => {
                 proposedServiceName: `get-${item.name.toLowerCase().replace(/_/g, '-')}`,
                 status: 'PENDING',
                 complexity: item.type === 'ProgramUnit' ? 'HIGH' : 'LOW',
-                sqlLogic: item.query || item.reason
+                sqlLogic: item.query || item.reason,
+                projectId: currentProject?.id
             });
-            setMessage({ type: 'success', text: `Servicio registrado: ${item.name}` });
-            setTimeout(() => setMessage(null), 3000);
+            showToast('success', `Service registered: ${item.name}`);
+            // No need for extra setTimeout, showToast handles it
         } catch (error) {
             console.error('Error registering service:', error);
-            setMessage({ type: 'error', text: 'Error al registrar servicio.' });
+            showToast('error', 'Error registering service.');
         }
     };
 
@@ -176,10 +186,10 @@ const AuthenticatedApp: React.FC = () => {
         <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
             {/* Header */}
             <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center transition-all sticky top-0 z-50">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition" onClick={() => { setActiveTab('project'); setProjectView('dashboard'); }}>
                     <Database className="text-blue-400" />
                     <h1 className="text-xl font-bold tracking-tight">Schindler</h1>
-                    <div className="ml-6 border-l border-slate-700 pl-6">
+                    <div className="ml-6 border-l border-slate-700 pl-6" onClick={(e) => e.stopPropagation()}>
                         <ProjectSelector />
                     </div>
                 </div>
@@ -190,13 +200,13 @@ const AuthenticatedApp: React.FC = () => {
                         <button
                             onClick={() => { setActiveTab('project'); setProjectView('dashboard'); }}
                             className={`p-2 rounded-lg transition ${activeTab === 'project' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
-                            title="Proyectos"
+                            title="Projects"
                         >
                             <FileText size={20} />
                         </button>
                         <button
-                            onClick={() => setActiveTab('config')}
-                            className={`p-2 rounded-lg transition ${activeTab === 'config' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
+                            onClick={() => setActiveTab('settings')}
+                            className={`p-2 rounded-lg transition ${activeTab === 'settings' ? 'bg-blue-600' : 'hover:bg-slate-800'}`}
                             title="Configuration"
                         >
                             <Settings size={20} />
@@ -236,8 +246,10 @@ const AuthenticatedApp: React.FC = () => {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto p-6">
+                {/* Toast Notification */}
                 {message && (
-                    <div className={`mb-4 p-4 rounded-lg flex items-center gap-2 ${message.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800'}`}>
+                    <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium flex items-center gap-2 animate-in slide-in-from-bottom-5 duration-300 ${message.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+                        }`}>
                         {message.type === 'success' ? <CheckCircle size={18} /> : <AlertTriangle size={18} />}
                         {message.text}
                     </div>
@@ -259,22 +271,22 @@ const AuthenticatedApp: React.FC = () => {
                                     onClick={() => setProjectView('dashboard')}
                                     className="text-slate-500 hover:text-slate-800 mb-4 flex items-center gap-2 text-sm font-medium"
                                 >
-                                    &larr; Volver al Dashboard
+                                    &larr; Back to Dashboard
                                 </button>
                                 <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-slate-300 rounded-2xl bg-white">
                                     <div className="bg-blue-50 p-6 rounded-full mb-4">
                                         <FileText size={48} className="text-blue-600" />
                                     </div>
-                                    <h2 className="text-2xl font-semibold mb-2">Cargar Módulo XML</h2>
+                                    <h2 className="text-2xl font-semibold mb-2">Upload XML Module</h2>
                                     <p className="text-slate-500 mb-6 text-center max-w-md">
-                                        Exporta tu archivo .FMB a formato XML usando Forms2XML y súbelo aquí para comenzar el análisis.
+                                        Export your .FMB file to XML format using Forms2XML and upload it here to start the analysis.
                                     </p>
                                     <label className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl cursor-pointer transition flex items-center gap-2 font-medium shadow-lg shadow-blue-500/20">
                                         <PlusCircle size={20} />
-                                        Seleccionar Archivo XML
+                                        Select XML File
                                         <input type="file" className="hidden" accept=".xml" onChange={handleFileUpload} />
                                     </label>
-                                    {loading && <p className="mt-4 animate-pulse text-blue-600 font-medium">Analizando con Backend...</p>}
+                                    {loading && <p className="mt-4 animate-pulse text-blue-600 font-medium">Analyzing with Backend...</p>}
                                 </div>
                             </div>
                         )}
@@ -300,13 +312,13 @@ const AuthenticatedApp: React.FC = () => {
                                             onClick={handleDiscardAnalysis}
                                             className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg font-medium transition flex items-center gap-2"
                                         >
-                                            <Trash2 size={16} /> Eliminar
+                                            <Trash2 size={16} /> Delete
                                         </button>
                                         <button
                                             onClick={handleSaveAnalysis}
                                             className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-lg font-medium transition flex items-center gap-2 shadow-lg"
                                         >
-                                            <CheckCircle size={16} /> Guardar y Salir
+                                            <CheckCircle size={16} /> Save & Exit
                                         </button>
                                     </div>
                                 </div>
@@ -329,7 +341,7 @@ const AuthenticatedApp: React.FC = () => {
                                         onClick={() => setAnalysisSubTab('blocks')}
                                         className={`px-4 py-2 text-sm font-medium rounded-t-lg transition whitespace-nowrap ${analysisSubTab === 'blocks' ? 'bg-white border text-blue-600 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
-                                        Bloques ({analysisResult.parsedData?.blocks?.length || 0})
+                                        Blocks ({analysisResult.parsedData?.blocks?.length || 0})
                                     </button>
                                     <button
                                         onClick={() => setAnalysisSubTab('plsql')}
@@ -360,11 +372,22 @@ const AuthenticatedApp: React.FC = () => {
                                 )}
 
                                 {analysisSubTab === 'blocks' && (
-                                    <BlocksTable
-                                        blocks={analysisResult.parsedData.blocks}
-                                        setSelectedItem={setSelectedItem}
-                                        createDevOpsTicket={openTicketModal}
-                                    />
+                                    selectedBlock ? (
+                                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-[calc(100vh-250px)]">
+                                            <BlockDetailView
+                                                analysisResult={analysisResult}
+                                                blockName={selectedBlock}
+                                                onBack={() => setSelectedBlock(null)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <BlocksTable
+                                            blocks={analysisResult.parsedData.blocks}
+                                            setSelectedItem={setSelectedItem}
+                                            createDevOpsTicket={openTicketModal}
+                                            onBlockSelect={setSelectedBlock}
+                                        />
+                                    )
                                 )}
 
                                 {analysisSubTab === 'plsql' && (
@@ -390,8 +413,8 @@ const AuthenticatedApp: React.FC = () => {
                 )}
 
                 {/* TAB: CONFIGURATION */}
-                {activeTab === 'config' && (
-                    <SettingsPanel />
+                {activeTab === 'settings' && (
+                    <ProjectSettings />
                 )}
 
                 {/* TAB: SERVICE REGISTRY */}
@@ -427,7 +450,10 @@ const App: React.FC = () => {
         <BrowserRouter>
             <AuthProvider>
                 <ProjectProvider>
-                    <AppContent />
+                    <Routes>
+                        <Route path="/login" element={<Login />} />
+                        <Route path="/*" element={<AppContent />} />
+                    </Routes>
                 </ProjectProvider>
             </AuthProvider>
         </BrowserRouter>

@@ -56,6 +56,64 @@ export class AiService {
         return provider.generateResponse(prompt);
     }
 
+    async generateBlockRecommendations(projectId: string, blockData: any, rules: any[], domains: any[]): Promise<any[]> {
+        const project = await this.projectsRepository.findOne({ where: { id: projectId } });
+        if (!project) throw new Error('Project not found');
+
+        const config = project.aiConfig as AiConfig;
+        if (!config || !config.provider) {
+            throw new Error('AI Configuration not found for this project');
+        }
+
+        const provider = this.aiFactory.createProvider(config);
+
+        // Filter rules for Backend API
+        const backendRules = rules.filter(r => r.targetLayer === 'Backend API' && r.isActive);
+        const domainNames = domains.map(d => d.name).join(', ');
+
+        const prompt = `
+        Analyze the following Oracle Forms Data Block and suggest a Modern NestJS REST API architecture.
+        
+        **Block Metadata:**
+        - Name: ${blockData.name}
+        - Data Source Type: ${blockData.dataSourceType} (TABLE or QUERY)
+        - Data Source: ${blockData.dataSource}
+        - Columns: ${blockData.itemsCount} items
+        
+        **Context:**
+        - Business Domains: ${domainNames}
+        - Migration Rules (Backend Patterns): ${backendRules.map(r => r.patternName).join(', ')}
+
+        **Requirements:**
+        1. If Data Source Type is TABLE, suggest full CRUD endpoints (GET, POST, PUT, DELETE).
+        2. If Data Source Type is QUERY, suggest only GET endpoint.
+        3. Assign a Business Domain from the list if relevant, otherwise suggest a new one.
+        4. Provide a technical technical description for each endpoint explaining the logic.
+        
+        **Output JSON Format (Array of objects):**
+        [
+            {
+                "serviceName": "get-employees",
+                "method": "GET",
+                "url": "/api/employees",
+                "description": "Fetches list of employees...",
+                "domain": "HR"
+            }
+        ]
+        Return ONLY valid JSON.
+        `;
+
+        const response = await provider.generateResponse(prompt);
+        try {
+            // Clean up code blocks if present
+            const cleanJson = response.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '').trim();
+            return JSON.parse(cleanJson);
+        } catch (e) {
+            console.error('Failed to parse AI response', response);
+            return [];
+        }
+    }
+
     private buildSummaryPrompt(data: any): string {
         return `Analyze the following Oracle Forms module components. 
     Module: ${data.moduleName}

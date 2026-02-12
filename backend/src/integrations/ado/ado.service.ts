@@ -71,4 +71,28 @@ export class AdoService {
             throw new InternalServerErrorException(`Failed to create Work Item: ${error.message}`);
         }
     }
+
+    async getWorkItemTypes(projectId: string): Promise<string[]> {
+        const orgUrl = await this.governanceService.getConfig('ADO_ORG_URL', projectId);
+        const project = await this.governanceService.getConfig('ADO_PROJECT', projectId);
+        const pat = await this.governanceService.getConfig('ADO_PAT', projectId);
+
+        if (!orgUrl || !project || !pat) return ['User Story', 'Task', 'Bug', 'Feature']; // Fallback
+
+        const url = `${orgUrl}/${project}/_apis/wit/workitemtypes?api-version=7.1`;
+
+        const config = {
+            headers: {
+                Authorization: `Basic ${Buffer.from(`:${pat}`).toString('base64')}`,
+            },
+        };
+
+        try {
+            const response = await lastValueFrom(this.httpService.get(url, config));
+            return response.data.value.map((t: any) => t.name);
+        } catch (error) {
+            this.logger.error(`Failed to fetch Work Item Types from ADO`, error);
+            return ['User Story', 'Task', 'Bug', 'Feature']; // Fallback
+        }
+    }
 }

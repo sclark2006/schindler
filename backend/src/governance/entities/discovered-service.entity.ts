@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Project } from './project.entity';
 
 @Entity()
 export class DiscoveredService {
@@ -25,4 +26,19 @@ export class DiscoveredService {
 
     @CreateDateColumn()
     createdAt: Date;
+
+    @Column({ nullable: true })
+    projectId: string;
+
+    @ManyToOne(() => Project, (project) => project.discoveredServices)
+    project: Project;
+
+    @Column({ nullable: true })
+    ticketId: string;
+
+    @Column({ nullable: true })
+    ticketUrl: string;
+
+    @Column({ default: 'PENDING' }) // PENDING, REQUESTED, ACTIVE, COMPLETED, REJECTED
+    ticketStatus: string;
 }

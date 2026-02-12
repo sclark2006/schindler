@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, BadRequestException, Get, Query } from '@nestjs/common';
 import { AdoService } from './ado.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 
@@ -16,5 +16,10 @@ export class AdoController {
     @Post('work-items')
     async createWorkItem(@Body() body: { title: string; description: string; type?: string; parentId?: number; projectId?: string }) {
         return this.adoService.createWorkItem(body.title, body.description, body.type, body.parentId, body.projectId);
+    }
+
+    @Get('types')
+    async getWorkItemTypes(@Query('projectId') projectId: string) {
+        return this.adoService.getWorkItemTypes(projectId);
     }
 }

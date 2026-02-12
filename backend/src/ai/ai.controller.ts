@@ -1,9 +1,10 @@
 
-import { Controller, Post, Body, UseGuards, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Param, Put, Get, Query, Patch } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AiService } from './ai.service';
 import { ProjectsService } from '../governance/projects/projects.service';
 import { AnalysisService } from '../analysis/analysis.service';
+import { RecommendationsService } from './recommendations.service';
 
 @Controller('ai')
 @UseGuards(JwtAuthGuard)
@@ -11,7 +12,8 @@ export class AiController {
     constructor(
         private aiService: AiService,
         private projectsService: ProjectsService,
-        private analysisService: AnalysisService
+        private analysisService: AnalysisService,
+        private recommendationsService: RecommendationsService
     ) { }
 
     @Put('config/:projectId')
@@ -40,5 +42,26 @@ export class AiController {
         }
         const text = await this.aiService.generateResponse(body.projectId, body.prompt);
         return { text };
+    }
+
+    @Post('recommend/block')
+    async recommendBlock(@Body() body: { projectId: string; block: any; rules: any[]; domains: any[] }) {
+        const recommendations = await this.aiService.generateBlockRecommendations(body.projectId, body.block, body.rules, body.domains);
+        return recommendations;
+    }
+
+    @Get('recommendations')
+    async getRecommendations(@Query('analysisId') analysisId: string, @Query('blockName') blockName: string) {
+        return this.recommendationsService.findAll(analysisId, blockName);
+    }
+
+    @Post('recommendations')
+    async saveRecommendations(@Body() body: { analysisId: string; recommendations: any[] }) {
+        return this.recommendationsService.createOrUpdate(body.analysisId, body.recommendations);
+    }
+
+    @Patch('recommendations/:id')
+    async updateRecommendation(@Param('id') id: string, @Body() body: any) {
+        return this.recommendationsService.update(id, body);
     }
 }

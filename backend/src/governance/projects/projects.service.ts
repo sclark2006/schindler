@@ -35,6 +35,18 @@ export class ProjectsService {
         return this.projectsRepository.save(project);
     }
 
+    async update(id: string, data: { name?: string; description?: string }): Promise<Project> {
+        const project = await this.findOne(id);
+        if (data.name) project.name = data.name;
+        if (data.description !== undefined) project.description = data.description;
+        return this.projectsRepository.save(project);
+    }
+
+    async delete(id: string): Promise<void> {
+        const project = await this.findOne(id);
+        await this.projectsRepository.remove(project);
+    }
+
     async findDefault(): Promise<Project> {
         // Find default or first available
         const project = await this.projectsRepository.findOne({ where: { name: 'Default Project' } });

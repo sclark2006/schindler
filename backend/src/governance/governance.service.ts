@@ -19,8 +19,12 @@ export class GovernanceService {
         private ruleRepository: Repository<MigrationRule>,
     ) { }
 
-    async findAll(): Promise<DiscoveredService[]> {
-        return this.servicesRepository.find({ order: { createdAt: 'DESC' } });
+    async findAll(projectId?: string): Promise<DiscoveredService[]> {
+        const query = { order: { createdAt: 'DESC' } } as any;
+        if (projectId) {
+            query.where = { projectId };
+        }
+        return this.servicesRepository.find(query);
     }
 
     async register(serviceData: Partial<DiscoveredService>): Promise<DiscoveredService> {
@@ -29,8 +33,12 @@ export class GovernanceService {
     }
 
     // --- Domains ---
-    async getDomains(): Promise<BusinessDomain[]> {
-        return this.domainRepository.find({ order: { name: 'ASC' } });
+    async getDomains(projectId?: string): Promise<BusinessDomain[]> {
+        const query = { order: { name: 'ASC' } } as any;
+        if (projectId) {
+            query.where = { projectId };
+        }
+        return this.domainRepository.find(query);
     }
 
     async createDomain(data: Partial<BusinessDomain>): Promise<BusinessDomain> {
@@ -48,10 +56,23 @@ export class GovernanceService {
         return this.ruleRepository.save(rule);
     }
 
+    async getRule(id: string): Promise<MigrationRule> {
+        return this.ruleRepository.findOne({ where: { id } });
+    }
+
+    async updateRule(id: string, data: Partial<MigrationRule>): Promise<MigrationRule> {
+        const rule = await this.getRule(id);
+        if (!rule) {
+            throw new Error('Rule not found');
+        }
+        Object.assign(rule, data);
+        return this.ruleRepository.save(rule);
+    }
+
     // --- System Configuration Methods ---
 
-    async getConfig(key: string, projectId: string = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'): Promise<string | null> {
-        const config = await this.configRepository.findOne({ where: { key, projectId } });
+    async getConfig(key: string, projectId: string = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', environment: string = 'DEV'): Promise<string | null> {
+        const config = await this.configRepository.findOne({ where: { key, projectId, environment } });
         return config ? config.value : null;
     }
 
@@ -59,10 +80,10 @@ export class GovernanceService {
         return this.configRepository.find({ where: { projectId } });
     }
 
-    async saveConfig(key: string, value: string, description?: string, isSecret: boolean = false, projectId: string = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11'): Promise<SystemConfig> {
-        let config = await this.configRepository.findOne({ where: { key, projectId } });
+    async saveConfig(key: string, value: string, description?: string, isSecret: boolean = false, projectId: string = 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', environment: string = 'DEV'): Promise<SystemConfig> {
+        let config = await this.configRepository.findOne({ where: { key, projectId, environment } });
         if (!config) {
-            config = this.configRepository.create({ key, value, description, isSecret, projectId });
+            config = this.configRepository.create({ key, value, description, isSecret, projectId, environment });
         } else {
             config.value = value;
             if (description) config.description = description;

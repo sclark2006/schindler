@@ -76,4 +76,44 @@ describe('AiService', () => {
             await expect(service.generateResponse('id', 'prompt')).rejects.toThrow('AI Configuration not found');
         });
     });
+
+    describe('generateSummary', () => {
+        it('should generate summary using the configured provider', async () => {
+            const projectId = 'test-id';
+            const contextData = { moduleName: 'TestModule', blocks: [], dataSources: [] };
+            const aiConfig = { provider: 'openai', model: 'gpt-4' };
+            const project = { id: projectId, aiConfig } as any;
+            const summaryText = 'Summary';
+
+            mockProjectRepository.findOne.mockResolvedValue(project);
+            mockAiProviderFactory.createProvider.mockReturnValue(mockProvider);
+            mockProvider.generateResponse.mockResolvedValue(summaryText);
+
+            const result = await service.generateSummary(projectId, contextData);
+
+            expect(repo.findOne).toHaveBeenCalledWith({ where: { id: projectId } });
+            expect(mockProvider.generateResponse).toHaveBeenCalledWith(expect.stringContaining('TestModule'));
+            expect(result).toBe(summaryText);
+        });
+    });
+
+    describe('explainCode', () => {
+        it('should explain code using the configured provider', async () => {
+            const projectId = 'test-id';
+            const code = 'BEGIN NULL; END;';
+            const aiConfig = { provider: 'openai', model: 'gpt-4' };
+            const project = { id: projectId, aiConfig } as any;
+            const explanationText = 'Explanation';
+
+            mockProjectRepository.findOne.mockResolvedValue(project);
+            mockAiProviderFactory.createProvider.mockReturnValue(mockProvider);
+            mockProvider.generateResponse.mockResolvedValue(explanationText);
+
+            const result = await service.explainCode(projectId, code);
+
+            expect(repo.findOne).toHaveBeenCalledWith({ where: { id: projectId } });
+            expect(mockProvider.generateResponse).toHaveBeenCalledWith(expect.stringContaining('Explain the following Oracle Forms PL/SQL'));
+            expect(result).toBe(explanationText);
+        });
+    });
 });
