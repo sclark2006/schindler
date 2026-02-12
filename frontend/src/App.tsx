@@ -383,6 +383,7 @@ const AuthenticatedApp: React.FC = () => {
                                     ) : (
                                         <BlocksTable
                                             blocks={analysisResult.parsedData.blocks}
+                                            analysisId={analysisResult.id}
                                             setSelectedItem={setSelectedItem}
                                             createDevOpsTicket={openTicketModal}
                                             onBlockSelect={setSelectedBlock}

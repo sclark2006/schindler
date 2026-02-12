@@ -64,4 +64,15 @@ export class AiController {
     async updateRecommendation(@Param('id') id: string, @Body() body: any) {
         return this.recommendationsService.update(id, body);
     }
+
+    @Post('block-statuses')
+    async getBlockStatuses(@Body() body: { analysisId: string; blockNames: string[] }) {
+        return this.recommendationsService.getBlockStatuses(body.analysisId, body.blockNames);
+    }
+
+    @Put('block-status')
+    async setBlockStatus(@Body() body: { analysisId: string; blockName: string; status: string }) {
+        await this.recommendationsService.setBlockStatus(body.analysisId, body.blockName, body.status);
+        return { success: true };
+    }
 }

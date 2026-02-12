@@ -63,4 +63,78 @@ export class RecommendationsService {
         Object.assign(rec, updateData);
         return this.repo.save(rec);
     }
+
+    /**
+     * Compute block statuses from recommendations:
+     * - Pending: no recommendations
+     * - Proposed: recommendations exist but no tickets
+     * - In Progress: at least one ticket created
+     * - Migrated: all recommendations have status COMPLETED, or manual override
+     */
+    async getBlockStatuses(analysisId: string, blockNames: string[]): Promise<Record<string, string>> {
+        const statuses: Record<string, string> = {};
+
+        for (const blockName of blockNames) {
+            const recs = await this.repo.find({
+                where: { analysisResult: { id: analysisId }, blockName }
+            });
+
+            // Check for manual override first
+            const manualOverride = recs.find(r => r.serviceName === '__MANUAL_STATUS__');
+            if (manualOverride) {
+                statuses[blockName] = manualOverride.status;
+                continue;
+            }
+
+            if (recs.length === 0) {
+                statuses[blockName] = 'Pending';
+            } else {
+                const allCompleted = recs.every(r => r.status === 'COMPLETED');
+                const hasTickets = recs.some(r => r.ticketId);
+
+                if (allCompleted) {
+                    statuses[blockName] = 'Migrated';
+                } else if (hasTickets) {
+                    statuses[blockName] = 'In Progress';
+                } else {
+                    statuses[blockName] = 'Proposed';
+                }
+            }
+        }
+
+        return statuses;
+    }
+
+    /**
+     * Manually set a block status (e.g., mark as Migrated directly)
+     */
+    async setBlockStatus(analysisId: string, blockName: string, status: string): Promise<void> {
+        const analysis = await this.analysisRepo.findOne({ where: { id: analysisId } });
+        if (!analysis) throw new NotFoundException('Analysis not found');
+
+        // Upsert a special recommendation entry for manual status
+        let rec = await this.repo.findOne({
+            where: {
+                analysisResult: { id: analysisId },
+                blockName,
+                serviceName: '__MANUAL_STATUS__'
+            }
+        });
+
+        if (rec) {
+            rec.status = status;
+        } else {
+            rec = this.repo.create({
+                blockName,
+                serviceName: '__MANUAL_STATUS__',
+                method: 'N/A',
+                url: 'N/A',
+                description: `Manual status override: ${status}`,
+                status,
+                analysisResult: analysis
+            });
+        }
+
+        await this.repo.save(rec);
+    }
 }

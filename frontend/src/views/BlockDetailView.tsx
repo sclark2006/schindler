@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Database, Code, Sparkles, AlertCircle, ArrowUpRight, Check, Loader } from 'lucide-react';
+import { ArrowLeft, Database, Code, Sparkles, AlertCircle, ArrowUpRight, Check, Loader, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +25,8 @@ export const BlockDetailView: React.FC<BlockDetailViewProps> = ({ analysisResult
     const [generating, setGenerating] = useState(false);
     const [selectedRec, setSelectedRec] = useState<any>(null);
     const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+    const [blockStatus, setBlockStatus] = useState<string>('Pending');
+    const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
 
     useEffect(() => {
         if (analysisResult && blockName) {
@@ -82,10 +84,24 @@ export const BlockDetailView: React.FC<BlockDetailViewProps> = ({ analysisResult
                     headers: { Authorization: `Bearer ${token}` },
                     timeout: 5000 // 5s timeout
                 });
-                setRecommendations(resRecs.data);
+                // Filter out manual status entries
+                setRecommendations(resRecs.data.filter((r: any) => r.serviceName !== '__MANUAL_STATUS__'));
             } catch (err) {
                 console.error('Error fetching recommendations:', err);
                 // Don't block the UI if recommendations fail
+            }
+
+            // 3. Fetch block status
+            try {
+                const statusRes = await axios.post(`${API_URL}/ai/block-statuses`, {
+                    analysisId: analysisResult.id,
+                    blockNames: [blockName]
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setBlockStatus(statusRes.data[blockName] || 'Pending');
+            } catch (err) {
+                console.error('Error fetching block status:', err);
             }
 
         } catch (error) {
@@ -189,8 +205,49 @@ export const BlockDetailView: React.FC<BlockDetailViewProps> = ({ analysisResult
                     </h1>
                     <p className="text-xs text-slate-500">Block Details & Migration Analysis</p>
                 </div>
-                <div className="ml-auto flex gap-2">
-                    {/* Actions if needed */}
+                <div className="ml-auto flex items-center gap-3">
+                    {/* Status Badge with Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${blockStatus === 'Migrated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                    blockStatus === 'In Progress' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                        blockStatus === 'Proposed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                            'bg-slate-100 text-slate-600 border-slate-200'
+                                }`}
+                        >
+                            {blockStatus}
+                            <ChevronDown size={12} />
+                        </button>
+                        {statusDropdownOpen && (
+                            <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border border-slate-200 z-50 py-1">
+                                {['Pending', 'Proposed', 'In Progress', 'Migrated'].map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={async () => {
+                                            try {
+                                                await axios.put(`${API_URL}/ai/block-status`, {
+                                                    analysisId: analysisResult.id,
+                                                    blockName,
+                                                    status: s
+                                                }, {
+                                                    headers: { Authorization: `Bearer ${token}` }
+                                                });
+                                                setBlockStatus(s);
+                                            } catch (err) {
+                                                console.error('Error setting block status:', err);
+                                            }
+                                            setStatusDropdownOpen(false);
+                                        }}
+                                        className={`block w-full text-left px-3 py-2 text-xs hover:bg-slate-50 transition ${blockStatus === s ? 'font-bold text-indigo-600' : 'text-slate-700'
+                                            }`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
