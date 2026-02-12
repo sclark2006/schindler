@@ -30,6 +30,7 @@ import { ProjectDashboard } from './components/ProjectDashboard';
 import { Login } from './pages/Login';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BlockDetailView } from './views/BlockDetailView';
+import { RecordGroupDetailView } from './views/RecordGroupDetailView';
 
 import { AnalysisResult } from './types/analysis';
 
@@ -61,6 +62,7 @@ const AuthenticatedApp: React.FC = () => {
     const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'architecture' | 'blocks' | 'plsql' | 'record-groups'>('dashboard');
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [selectedBlock, setSelectedBlock] = useState<string | null>(null); // New state for SPA block navigation
+    const [selectedRecordGroup, setSelectedRecordGroup] = useState<string | null>(null);
     const [ticketModal, setTicketModal] = useState({ isOpen: false, title: '', description: '' });
     const [showAbout, setShowAbout] = useState(false);
 
@@ -402,11 +404,23 @@ const AuthenticatedApp: React.FC = () => {
                                 )}
 
                                 {analysisSubTab === 'record-groups' && (
-                                    <RecordGroupsTable
-                                        recordGroups={analysisResult.parsedData.recordGroups}
-                                        registerService={registerService}
-                                        createDevOpsTicket={openTicketModal}
-                                    />
+                                    selectedRecordGroup ? (
+                                        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-[calc(100vh-250px)]">
+                                            <RecordGroupDetailView
+                                                analysisResult={analysisResult}
+                                                recordGroupName={selectedRecordGroup}
+                                                onBack={() => setSelectedRecordGroup(null)}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <RecordGroupsTable
+                                            recordGroups={analysisResult.parsedData.recordGroups}
+                                            analysisId={analysisResult.id}
+                                            registerService={registerService}
+                                            createDevOpsTicket={openTicketModal}
+                                            onRecordGroupSelect={setSelectedRecordGroup}
+                                        />
+                                    )
                                 )}
                             </div>
                         )}

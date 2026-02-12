@@ -103,7 +103,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ onNewAnalysi
     const totalRG = analyses.reduce((sum, a) => sum + (a.parsedData?.recordGroups?.length || 0), 0);
     const totalComponents = totalBlocks + totalTriggers + totalPU + totalRG;
     const avgComplexity = analyses.length > 0
-        ? Math.round(analyses.reduce((sum, a) => sum + (a.complexityScore || 0), 0) / analyses.length)
+        ? Math.round(analyses.reduce((sum, a) => sum + (Number(a.complexityScore) || 0), 0) / analyses.length)
         : 0;
 
     // Overall migration progress (aggregate)
