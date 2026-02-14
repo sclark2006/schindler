@@ -25,6 +25,12 @@ export class Recommendation {
     originalDescription: string;
 
     @Column({ nullable: true })
+    domain: string;
+
+    @Column({ default: 'v1' })
+    version: string;
+
+    @Column({ nullable: true })
     ticketId: string;
 
     @Column({ nullable: true })

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Settings, Plus, Save, Github, Trash2 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const AI_MODELS: Record<string, string[]> = {
     openai: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],

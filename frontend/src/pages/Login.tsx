@@ -9,7 +9,7 @@ export const Login: React.FC = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const API_URL = import.meta.env.VITE_API_URL;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

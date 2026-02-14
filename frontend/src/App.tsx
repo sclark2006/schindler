@@ -31,6 +31,7 @@ import { Login } from './pages/Login';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { BlockDetailView } from './views/BlockDetailView';
 import { RecordGroupDetailView } from './views/RecordGroupDetailView';
+import { ServicesView } from './views/ServicesView';
 
 import { AnalysisResult } from './types/analysis';
 
@@ -39,7 +40,7 @@ interface Message {
     text: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 
 const AuthenticatedApp: React.FC = () => {
@@ -59,7 +60,7 @@ const AuthenticatedApp: React.FC = () => {
     };
     const [loading, setLoading] = useState(false);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-    const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'architecture' | 'blocks' | 'plsql' | 'record-groups'>('dashboard');
+    const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'architecture' | 'blocks' | 'plsql' | 'record-groups' | 'services'>('dashboard');
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [selectedBlock, setSelectedBlock] = useState<string | null>(null); // New state for SPA block navigation
     const [selectedRecordGroup, setSelectedRecordGroup] = useState<string | null>(null);
@@ -352,10 +353,23 @@ const AuthenticatedApp: React.FC = () => {
                                         PL/SQL ({(analysisResult.parsedData?.triggers?.length || 0) + (analysisResult.parsedData?.programUnits?.length || 0)})
                                     </button>
                                     <button
-                                        onClick={() => setAnalysisSubTab('record-groups')}
+                                        onClick={() => {
+                                            setAnalysisSubTab('record-groups');
+                                            setSelectedRecordGroup(null); // Reset to list view
+                                        }}
                                         className={`px-4 py-2 text-sm font-medium rounded-t-lg transition whitespace-nowrap ${analysisSubTab === 'record-groups' ? 'bg-white border text-blue-600 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-800'}`}
                                     >
                                         Record Groups ({analysisResult.parsedData?.recordGroups?.length || 0})
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setAnalysisSubTab('services');
+                                            setSelectedBlock(null); // Reset detail views
+                                            setSelectedRecordGroup(null);
+                                        }}
+                                        className={`px-4 py-2 text-sm font-medium rounded-t-lg transition whitespace-nowrap ${analysisSubTab === 'services' ? 'bg-white border text-blue-600 border-b-white -mb-px' : 'text-slate-500 hover:text-slate-800'}`}
+                                    >
+                                        Services
                                     </button>
                                 </div>
 
@@ -421,6 +435,10 @@ const AuthenticatedApp: React.FC = () => {
                                             onRecordGroupSelect={setSelectedRecordGroup}
                                         />
                                     )
+                                )}
+
+                                {analysisSubTab === 'services' && (
+                                    <ServicesView />
                                 )}
                             </div>
                         )}

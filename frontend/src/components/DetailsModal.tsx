@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useProject } from '../context/ProjectContext';
 import { TicketCreationModal } from './TicketCreationModal';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface DetailsModalProps {
     item: any;

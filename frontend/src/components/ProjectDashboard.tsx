@@ -4,7 +4,7 @@ import { useProject } from '../context/ProjectContext';
 import { Plus, Trash2, Eye, FileText, Calendar, Database, Code, Layers, BarChart3, TrendingUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface AnalysisResult {
     id: string;

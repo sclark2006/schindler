@@ -5,7 +5,16 @@ import { useProject } from '../context/ProjectContext';
 import { useAuth } from '../context/AuthContext';
 import { TicketCreationModal } from '../components/TicketCreationModal';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
+
+// Swagger-style colors for HTTP methods
+const methodConfig: Record<string, { label: string; color: string }> = {
+    'GET': { label: 'GET', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+    'POST': { label: 'POST', color: 'bg-green-50 text-green-700 border-green-200' },
+    'PUT': { label: 'PUT', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+    'PATCH': { label: 'PATCH', color: 'bg-orange-50 text-orange-700 border-orange-200' },
+    'DELETE': { label: 'DELETE', color: 'bg-red-50 text-red-700 border-red-200' },
+};
 
 import { AnalysisResult } from '../types/analysis';
 
@@ -152,6 +161,26 @@ export const RecordGroupDetailView: React.FC<RecordGroupDetailViewProps> = ({ an
             }, {
                 headers: { Authorization: `Bearer ${token}` }
             });
+
+            // Auto-register service in discovered_service catalog
+            await axios.post(`${API_URL}/discovered-services/register`, {
+                projectId: currentProject?.id,
+                originalName: selectedRec.blockName,
+                sourceType: 'RECORD_GROUP',
+                method: selectedRec.method,
+                domain: selectedRec.domain,
+                endpoint: selectedRec.url,
+                dataSource: selectedRec.blockName,
+                dataSourceType: 'QUERY',
+                proposedServiceName: selectedRec.serviceName,
+                ticketId: ticketData.id,
+                ticketUrl: ticketData.url,
+                status: 'APPROVED',
+                ticketStatus: 'ACTIVE'
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
             fetchData();
         } catch (e) {
             console.error('Error linking ticket to recommendation:', e);
@@ -181,9 +210,9 @@ export const RecordGroupDetailView: React.FC<RecordGroupDetailViewProps> = ({ an
                         <button
                             onClick={() => setStatusDropdownOpen(!statusDropdownOpen)}
                             className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${rgStatus === 'Migrated' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                    rgStatus === 'In Progress' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                        rgStatus === 'Proposed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
-                                            'bg-slate-100 text-slate-600 border-slate-200'
+                                rgStatus === 'In Progress' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                    rgStatus === 'Proposed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
+                                        'bg-slate-100 text-slate-600 border-slate-200'
                                 }`}
                         >
                             {rgStatus}
@@ -302,8 +331,8 @@ export const RecordGroupDetailView: React.FC<RecordGroupDetailViewProps> = ({ an
                                     <div key={i} className={`bg-white p-5 rounded-xl border shadow-sm transition hover:shadow-md ${rec.ticketId ? 'border-green-200 bg-green-50/30' : 'border-slate-200'}`}>
                                         <div className="flex justify-between items-start mb-3">
                                             <div className="flex items-center gap-2">
-                                                <span className="px-2 py-1 rounded-md text-xs font-bold border bg-emerald-50 text-emerald-700 border-emerald-100">
-                                                    GET
+                                                <span className={`px-2 py-1 rounded-md text-xs font-bold border ${(methodConfig[rec.method] || methodConfig['GET']).color}`}>
+                                                    {rec.method}
                                                 </span>
                                                 <span className="font-mono text-sm font-medium text-slate-700">{rec.url}</span>
                                             </div>
@@ -321,9 +350,9 @@ export const RecordGroupDetailView: React.FC<RecordGroupDetailViewProps> = ({ an
 
                                         <div className="flex justify-between items-center pt-3 border-t border-slate-100">
                                             <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${rec.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' :
-                                                    rec.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
-                                                        rec.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
-                                                            'bg-slate-100 text-slate-600'
+                                                rec.status === 'ACCEPTED' ? 'bg-blue-100 text-blue-700' :
+                                                    rec.status === 'REJECTED' ? 'bg-red-100 text-red-700' :
+                                                        'bg-slate-100 text-slate-600'
                                                 }`}>
                                                 {rec.status}
                                             </span>

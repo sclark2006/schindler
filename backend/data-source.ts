@@ -5,6 +5,7 @@ import { BusinessDomain } from './src/governance/entities/business-domain.entity
 import { MigrationRule } from './src/governance/entities/migration-rule.entity';
 import { SystemConfig } from './src/governance/entities/system-config.entity';
 import { Project } from './src/governance/entities/project.entity';
+import { Recommendation } from './src/ai/entities/recommendation.entity';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,7 +17,7 @@ export const AppDataSource = new DataSource({
     username: process.env.DATABASE_USER || 'schindler',
     password: process.env.DATABASE_PASSWORD || 'password123',
     database: process.env.DATABASE_NAME || 'schindler_db',
-    entities: [AnalysisResult, DiscoveredService, BusinessDomain, MigrationRule, SystemConfig, Project],
+    entities: [AnalysisResult, DiscoveredService, BusinessDomain, MigrationRule, SystemConfig, Project, Recommendation],
     migrations: ['src/migrations/*.ts'],
     synchronize: false,
 });

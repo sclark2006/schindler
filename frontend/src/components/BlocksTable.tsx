@@ -3,7 +3,7 @@ import { Server, ArrowRight } from 'lucide-react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface BlocksTableProps {
     blocks: any[];
