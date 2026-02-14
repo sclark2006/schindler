@@ -1,5 +1,9 @@
-import React from 'react';
-import { Zap, ArrowRight, Share2, Cpu, BarChart2, Database, Code, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Zap, ArrowRight, Share2, Cpu, BarChart2, Database, Code, CheckCircle, Sparkles, Loader } from 'lucide-react';
+import axios from 'axios';
+import { useProject } from '../context/ProjectContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface CardProps {
     title: string;
@@ -29,8 +33,97 @@ interface AnalysisDashboardProps {
 }
 
 export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisResult, registerService, setSelectedItem, getRecommendations }) => {
+    const { currentProject } = useProject();
+    const [summary, setSummary] = useState<string>(analysisResult.summary || '');
+    const [loadingSummary, setLoadingSummary] = useState(false);
+
+    // Update local summary if prop changes (e.g. parent refresh)
+    React.useEffect(() => {
+        if (analysisResult.summary) {
+            setSummary(analysisResult.summary);
+        }
+    }, [analysisResult.summary]);
+
+    const generateSummary = async () => {
+        if (!currentProject) return;
+        setLoadingSummary(true);
+        try {
+            // Construct a prompt from the analysis metrics
+            const metrics = {
+                complexity: analysisResult.complexityScore,
+                level: analysisResult.complexityLevel,
+                totalBlocks: analysisResult.parsedData?.stats?.totalBlocks,
+                loc: analysisResult.parsedData?.stats?.totalLoc,
+                candidates: analysisResult.parsedData?.complexityCandidates?.length || 0
+            };
+
+            // Context data for the prompt
+            const contextData = {
+                moduleName: analysisResult.moduleName,
+                blocks: analysisResult.parsedData?.blocks || [],
+                dataSources: analysisResult.parsedData?.dataSources || [],
+                ...metrics,
+                analysisId: analysisResult.id // Pass ID to save result
+            };
+
+            const res = await axios.post(`${API_URL}/ai/summary/${currentProject.id}`, contextData);
+            setSummary(res.data.summary);
+        } catch (e) {
+            console.error(e);
+            setSummary('Error generando el resumen. Verifica la configuración de IA.');
+        } finally {
+            setLoadingSummary(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
+            {/* AI Summary Section */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-2xl shadow-sm border border-indigo-100 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10">
+                    <Sparkles size={100} />
+                </div>
+                <div className="relative z-10">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                            <Sparkles className="text-purple-600" size={20} />
+                            Análisis Inteligente (AI)
+                        </h3>
+                        {!summary && !loadingSummary && (
+                            <button
+                                onClick={generateSummary}
+                                className="bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-white/80 transition flex items-center gap-2"
+                            >
+                                <Sparkles size={16} /> Generar Resumen
+                            </button>
+                        )}
+                    </div>
+
+                    {loadingSummary && (
+                        <div className="flex items-center gap-3 text-indigo-700 animate-pulse">
+                            <Loader className="animate-spin" size={20} />
+                            <span className="text-sm font-medium">Analizando métricas y generando insights...</span>
+                        </div>
+                    )}
+
+                    {summary && (
+                        <div className="bg-white/60 p-4 rounded-xl backdrop-blur-sm border border-white/50 animate-in fade-in slide-in-from-bottom-2">
+                            <p className="text-indigo-900 text-sm leading-relaxed whitespace-pre-wrap">
+                                {summary}
+                            </p>
+                            <div className="mt-3 flex justify-end">
+                                <button
+                                    onClick={() => setSummary('')}
+                                    className="text-xs text-indigo-400 hover:text-indigo-600 underline"
+                                >
+                                    Ocultar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card title="Puntos de Función" value={Number(analysisResult.complexityScore || 0).toFixed(0)} sub="Score Calculado" icon={<Cpu className="text-purple-500" />} />
                 <Card title="Nivel de Complejidad" value={analysisResult.complexityLevel || 'N/A'} sub="Categoría" icon={<BarChart2 className="text-blue-500" />} />

@@ -18,7 +18,7 @@ export class SystemConfig {
     @UpdateDateColumn()
     updatedAt: Date;
 
-    @PrimaryColumn({ default: 'default-project-id' }) // Temporary default for migration
+    @PrimaryColumn({ default: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11' }) // Temporary default for migration
     projectId: string;
 
     @ManyToOne(() => Project, (project) => project.configs)

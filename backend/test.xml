@@ -1,0 +1,7 @@
+<Module>
+    <FormModule Name="TEST_MODULE">
+        <Block Name="TEST_BLOCK">
+            <Item Name="TEST_ITEM" ItemType="Text Item"></Item>
+        </Block>
+    </FormModule>
+</Module>

@@ -7,6 +7,7 @@ import { AnalysisModule } from './analysis/analysis.module';
 import { GovernanceModule } from './governance/governance.module';
 import { AuthModule } from './auth/auth.module';
 import { AdoModule } from './integrations/ado/ado.module';
+import { AiModule } from './ai/ai.module';
 import { AnalysisResult } from './analysis/entities/analysis-result.entity';
 import { DiscoveredService } from './governance/entities/discovered-service.entity';
 import { BusinessDomain } from './governance/entities/business-domain.entity';
@@ -32,6 +33,7 @@ import { Project } from './governance/entities/project.entity';
         GovernanceModule,
         AuthModule,
         AdoModule,
+        AiModule,
     ],
     controllers: [AppController],
     providers: [AppService],

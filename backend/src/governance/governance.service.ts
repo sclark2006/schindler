@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DiscoveredService } from './entities/discovered-service.entity';
 import { SystemConfig } from './entities/system-config.entity';
+import { BusinessDomain } from './entities/business-domain.entity';
+import { MigrationRule } from './entities/migration-rule.entity';
 
 @Injectable()
 export class GovernanceService {
@@ -11,6 +13,10 @@ export class GovernanceService {
         private servicesRepository: Repository<DiscoveredService>,
         @InjectRepository(SystemConfig)
         private configRepository: Repository<SystemConfig>,
+        @InjectRepository(BusinessDomain)
+        private domainRepository: Repository<BusinessDomain>,
+        @InjectRepository(MigrationRule)
+        private ruleRepository: Repository<MigrationRule>,
     ) { }
 
     async findAll(): Promise<DiscoveredService[]> {
@@ -20,6 +26,26 @@ export class GovernanceService {
     async register(serviceData: Partial<DiscoveredService>): Promise<DiscoveredService> {
         const service = this.servicesRepository.create(serviceData);
         return this.servicesRepository.save(service);
+    }
+
+    // --- Domains ---
+    async getDomains(): Promise<BusinessDomain[]> {
+        return this.domainRepository.find({ order: { name: 'ASC' } });
+    }
+
+    async createDomain(data: Partial<BusinessDomain>): Promise<BusinessDomain> {
+        const domain = this.domainRepository.create(data);
+        return this.domainRepository.save(domain);
+    }
+
+    // --- Rules ---
+    async getRules(): Promise<MigrationRule[]> {
+        return this.ruleRepository.find({ order: { createdAt: 'DESC' } });
+    }
+
+    async createRule(data: Partial<MigrationRule>): Promise<MigrationRule> {
+        const rule = this.ruleRepository.create(data);
+        return this.ruleRepository.save(rule);
     }
 
     // --- System Configuration Methods ---

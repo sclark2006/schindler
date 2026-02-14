@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { Code, Search, Share2, ArrowRight } from 'lucide-react';
+import { Code, Search, Share2, ArrowRight, Sparkles, Loader } from 'lucide-react';
+import axios from 'axios';
+import { useProject } from '../context/ProjectContext';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 interface PlSqlViewerProps {
     triggers: any[];
@@ -10,10 +14,37 @@ interface PlSqlViewerProps {
 }
 
 export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], programUnits = [], setSelectedItem, registerService, createDevOpsTicket }) => {
+    const { currentProject } = useProject();
     const [searchTerm, setSearchTerm] = useState('');
+    const [explaining, setExplaining] = useState<string | null>(null);
 
     const filteredTriggers = triggers.filter(t => t.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const filteredProgramUnits = programUnits.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const handleExplain = async (item: any, type: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!currentProject) return;
+
+        setExplaining(item.name);
+        try {
+            const prompt = `Explica brevemente qué hace este código PL/SQL (${type}: ${item.name}). Identifica dependencias clave y sugiere una estrategia para migrarlo a Java/Spring Boot o TypeScript/Node.js:\n\n${item.code}`;
+
+            const res = await axios.post(`${API_URL}/ai/generate`, { prompt, projectId: currentProject.id });
+
+            // We append the explanation to the item or show it in a modal.
+            // For simplicity, let's update the item description or set it as selected item with explanation
+            setSelectedItem({
+                ...item,
+                aiExplanation: res.data.text,
+                type: type // ensure type is set
+            });
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setExplaining(null);
+        }
+    };
 
     return (
         <div className="space-y-6">
@@ -54,12 +85,22 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                         Ver Código <ArrowRight size={10} />
                                     </span>
                                 </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Trigger: ${t.name}`, `Analyze and refactor logic for trigger ${t.name} in block ${t.parentBlock}. LOC: ${t.loc}`); }}
-                                    className="mt-2 w-full text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition opacity-0 group-hover:opacity-100"
-                                >
-                                    Crear Ticket
-                                </button>
+                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Trigger: ${t.name}`, `Analyze and refactor logic for trigger ${t.name} in block ${t.parentBlock}. LOC: ${t.loc}`); }}
+                                        className="flex-1 text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition"
+                                    >
+                                        Crear Ticket
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleExplain(t, 'Trigger', e)}
+                                        disabled={explaining === t.name}
+                                        className="flex-1 text-center text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 py-1 rounded transition flex justify-center items-center gap-1"
+                                    >
+                                        {explaining === t.name ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                        {explaining === t.name ? 'Analizando...' : 'Explicar IA'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -90,12 +131,22 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                         Ver Código <ArrowRight size={10} />
                                     </span>
                                 </div>
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Program Unit: ${p.name}`, `Logic extraction for ${p.name}. LOC: ${p.loc}`); }}
-                                    className="mt-2 w-full text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition opacity-0 group-hover:opacity-100"
-                                >
-                                    Crear Ticket
-                                </button>
+                                <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Program Unit: ${p.name}`, `Logic extraction for ${p.name}. LOC: ${p.loc}`); }}
+                                        className="flex-1 text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition"
+                                    >
+                                        Crear Ticket
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleExplain(p, 'Program Unit', e)}
+                                        disabled={explaining === p.name}
+                                        className="flex-1 text-center text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 py-1 rounded transition flex justify-center items-center gap-1"
+                                    >
+                                        {explaining === p.name ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                        {explaining === p.name ? 'Analizando...' : 'Explicar IA'}
+                                    </button>
+                                </div>
                             </div>
                         ))}
                     </div>

@@ -15,6 +15,9 @@ export class AnalysisResult {
     @Column('jsonb')
     parsedData: any; // Using JSONB as decided in architecture
 
+    @Column('text', { nullable: true })
+    summary: string;
+
     @Column('decimal', { precision: 10, scale: 2 })
     complexityScore: number;
 

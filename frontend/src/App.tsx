@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { AboutModal } from './components/AboutModal';
 import {
     FileText,
     Settings,
@@ -10,7 +11,8 @@ import {
     Share2,
     LogOut,
     User,
-    Trash2
+    Trash2,
+    HelpCircle
 } from 'lucide-react';
 import { ServiceRegistry } from './components/ServiceRegistry';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -51,6 +53,7 @@ const AuthenticatedApp: React.FC = () => {
     const [analysisSubTab, setAnalysisSubTab] = useState<'dashboard' | 'architecture' | 'blocks' | 'plsql' | 'record-groups'>('dashboard');
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [ticketModal, setTicketModal] = useState({ isOpen: false, title: '', description: '' });
+    const [showAbout, setShowAbout] = useState(false);
 
     // New: Fetch specific analysis
     const fetchAnalysisById = async (id: string) => {
@@ -175,7 +178,7 @@ const AuthenticatedApp: React.FC = () => {
             <header className="bg-slate-900 text-white p-4 shadow-lg flex justify-between items-center transition-all sticky top-0 z-50">
                 <div className="flex items-center gap-2">
                     <Database className="text-blue-400" />
-                    <h1 className="text-xl font-bold tracking-tight">Oracle Forms Migration Architect</h1>
+                    <h1 className="text-xl font-bold tracking-tight">Schindler</h1>
                     <div className="ml-6 border-l border-slate-700 pl-6">
                         <ProjectSelector />
                     </div>
@@ -204,6 +207,13 @@ const AuthenticatedApp: React.FC = () => {
                             title="Registry"
                         >
                             <Share2 size={20} />
+                        </button>
+                        <button
+                            onClick={() => setShowAbout(true)}
+                            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition"
+                            title="About Schindler"
+                        >
+                            <HelpCircle size={20} />
                         </button>
                     </div>
 
@@ -402,6 +412,7 @@ const AuthenticatedApp: React.FC = () => {
                 initialDescription={ticketModal.description}
                 projectId={currentProject?.id}
             />
+            <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
         </div>
     );
 };

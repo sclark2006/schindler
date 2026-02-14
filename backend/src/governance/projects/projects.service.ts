@@ -10,6 +10,14 @@ export class ProjectsService {
         private projectsRepository: Repository<Project>,
     ) { }
 
+    async updateAiConfig(projectId: string, config: any): Promise<Project> {
+        const project = await this.projectsRepository.findOne({ where: { id: projectId } });
+        if (!project) throw new Error('Project not found');
+
+        project.aiConfig = config;
+        return this.projectsRepository.save(project);
+    }
+
     async findAll(): Promise<Project[]> {
         return this.projectsRepository.find({ order: { createdAt: 'DESC' } });
     }

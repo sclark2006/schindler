@@ -17,7 +17,7 @@ interface ProjectContextType {
     createProject: (name: string, description: string) => Promise<any>;
 }
 
-const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
+export const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { token } = useAuth();
