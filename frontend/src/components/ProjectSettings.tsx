@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Settings, Plus, Save, Github } from 'lucide-react';
+import { Settings, Plus, Save, Github, Trash2 } from 'lucide-react';
 import { useProject } from '../context/ProjectContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 const AI_MODELS: Record<string, string[]> = {
     openai: ['gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo'],
@@ -32,9 +32,9 @@ interface MigrationRule {
     isActive: boolean;
 }
 
-export const SettingsPanel: React.FC = () => {
+export const ProjectSettings: React.FC = () => {
     const { currentProject } = useProject();
-    const [activeTab, setActiveTab] = useState<'domains' | 'rules' | 'integrations' | 'ai'>('domains');
+    const [activeTab, setActiveTab] = useState<'general' | 'domains' | 'rules' | 'integrations' | 'ai'>('general');
 
     // Domain State
     const [domains, setDomains] = useState<BusinessDomain[]>([]);
@@ -43,6 +43,7 @@ export const SettingsPanel: React.FC = () => {
     // Rules State
     const [rules, setRules] = useState<MigrationRule[]>([]);
     const [newRule, setNewRule] = useState({ patternName: '', ticketTemplate: '', targetLayer: 'Backend API' });
+    const [editingRule, setEditingRule] = useState<MigrationRule | null>(null);
 
     // ADO Config Configuration
     const [adoConfig, setAdoConfig] = useState({ orgUrl: '', project: '', pat: '' });
@@ -52,15 +53,56 @@ export const SettingsPanel: React.FC = () => {
     const [githubConfig, setGithubConfig] = useState({ repoUrl: '', token: '' });
     const [initialGithubConfig, setInitialGithubConfig] = useState({ repoUrl: '', token: '' });
 
-    // Toast State
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | null }>({ message: '', type: null });
+    const [selectedEnv, setSelectedEnv] = useState('DEV');
 
     const showToast = (message: string, type: 'success' | 'error') => {
         setToast({ message, type });
         setTimeout(() => setToast({ message: '', type: null }), 3000);
     };
 
-    // AI Config State
+    // Project General Settings
+    const [projectSettings, setProjectSettings] = useState({ name: '', description: '' });
+
+    useEffect(() => {
+        if (currentProject) {
+            setProjectSettings({ name: currentProject.name, description: currentProject.description || '' });
+            fetchDomains();
+            fetchRules();
+            fetchAdoConfig();
+            fetchGithubConfig();
+            fetchAiConfig();
+        }
+    }, [currentProject, selectedEnv]);
+
+    const handleUpdateProject = async () => {
+        if (!currentProject) return;
+        try {
+            await axios.put(`${API_URL}/projects/${currentProject.id}`, projectSettings);
+            showToast('Project updated.', 'success');
+            // Refresh project context/list (not implemented in context but ideally should be)
+        } catch (e) {
+            console.error(e);
+            showToast('Error updating project.', 'error');
+        }
+    };
+
+    const handleDeleteProject = async () => {
+        if (!currentProject) return;
+        const confirmName = prompt(`To delete this project, type its full name: ${currentProject.name}`);
+        if (confirmName !== currentProject.name) {
+            showToast('Incorrect name. Deletion cancelled.', 'error');
+            return;
+        }
+
+        try {
+            await axios.delete(`${API_URL}/projects/${currentProject.id}`);
+            window.location.reload(); // Force reload to reset state/context
+        } catch (e) {
+            console.error(e);
+            showToast('Error deleting project.', 'error');
+        }
+    };
     const [aiConfig, setAiConfig] = useState({ provider: 'openai', model: 'gpt-4o', apiKey: '', baseUrl: '' });
     const [initialAiConfig, setInitialAiConfig] = useState({ provider: 'openai', model: 'gpt-4o', apiKey: '', baseUrl: '' });
 
@@ -72,7 +114,7 @@ export const SettingsPanel: React.FC = () => {
             fetchGithubConfig();
             fetchAiConfig();
         }
-    }, [currentProject]);
+    }, [currentProject, selectedEnv]);
 
     const fetchAiConfig = async () => {
         if (!currentProject) return;
@@ -90,17 +132,17 @@ export const SettingsPanel: React.FC = () => {
         try {
             await axios.put(`${API_URL}/ai/config/${currentProject.id}`, aiConfig);
             setInitialAiConfig(aiConfig);
-            showToast('Configuración de IA guardada correctamente.', 'success');
+            showToast('AI configuration saved successfully.', 'success');
         } catch (e) {
             console.error(e);
-            showToast('Error al guardar configuración de IA.', 'error');
+            showToast('Error saving AI configuration.', 'error');
         }
     };
 
     const fetchAdoConfig = async () => {
         if (!currentProject) return;
         try {
-            const res = await axios.get(`${API_URL}/governance/config`, { params: { projectId: currentProject.id } });
+            const res = await axios.get(`${API_URL}/governance/config`, { params: { projectId: currentProject.id, environment: selectedEnv } });
             const configs = res.data;
             if (configs.length > 0) {
                 const config = {
@@ -110,6 +152,9 @@ export const SettingsPanel: React.FC = () => {
                 };
                 setAdoConfig(config);
                 setInitialAdoConfig(config);
+            } else {
+                setAdoConfig({ orgUrl: '', project: '', pat: '' });
+                setInitialAdoConfig({ orgUrl: '', project: '', pat: '' });
             }
         } catch (e) { console.error(e); }
     };
@@ -117,7 +162,7 @@ export const SettingsPanel: React.FC = () => {
     const fetchGithubConfig = async () => {
         if (!currentProject) return;
         try {
-            const res = await axios.get(`${API_URL}/governance/config`, { params: { projectId: currentProject.id } });
+            const res = await axios.get(`${API_URL}/governance/config`, { params: { projectId: currentProject.id, environment: selectedEnv } });
             const configs = res.data;
             if (configs.length > 0) {
                 const config = {
@@ -126,6 +171,9 @@ export const SettingsPanel: React.FC = () => {
                 };
                 setGithubConfig(config);
                 setInitialGithubConfig(config);
+            } else {
+                setGithubConfig({ repoUrl: '', token: '' });
+                setInitialGithubConfig({ repoUrl: '', token: '' });
             }
         } catch (e) { console.error(e); }
     };
@@ -133,33 +181,34 @@ export const SettingsPanel: React.FC = () => {
     const saveAdoConfig = async () => {
         if (!currentProject) return;
         try {
-            await axios.post(`${API_URL}/governance/config`, { key: 'ADO_ORG_URL', value: adoConfig.orgUrl, description: 'Azure DevOps Organization URL', projectId: currentProject.id });
-            await axios.post(`${API_URL}/governance/config`, { key: 'ADO_PROJECT', value: adoConfig.project, description: 'Project Name', projectId: currentProject.id });
-            await axios.post(`${API_URL}/governance/config`, { key: 'ADO_PAT', value: adoConfig.pat, description: 'Personal Access Token', isSecret: true, projectId: currentProject.id });
+            await axios.post(`${API_URL}/governance/config`, { key: 'ADO_ORG_URL', value: adoConfig.orgUrl, description: 'Azure DevOps Organization URL', projectId: currentProject.id, environment: selectedEnv });
+            await axios.post(`${API_URL}/governance/config`, { key: 'ADO_PROJECT', value: adoConfig.project, description: 'Project Name', projectId: currentProject.id, environment: selectedEnv });
+            await axios.post(`${API_URL}/governance/config`, { key: 'ADO_PAT', value: adoConfig.pat, description: 'Personal Access Token', isSecret: true, projectId: currentProject.id, environment: selectedEnv });
             setInitialAdoConfig(adoConfig);
-            showToast('Configuración ADO guardada exitosamente.', 'success');
+            showToast('ADO configuration saved successfully.', 'success');
         } catch (e) {
             console.error(e);
-            showToast('Error al guardar la configuración ADO.', 'error');
+            showToast('Error saving ADO configuration.', 'error');
         }
     };
 
     const saveGithubConfig = async () => {
         if (!currentProject) return;
         try {
-            await axios.post(`${API_URL}/governance/config`, { key: 'GITHUB_REPO_URL', value: githubConfig.repoUrl, description: 'GitHub Repository URL', projectId: currentProject.id });
-            await axios.post(`${API_URL}/governance/config`, { key: 'GITHUB_TOKEN', value: githubConfig.token, description: 'GitHub Personal Access Token', isSecret: true, projectId: currentProject.id });
+            await axios.post(`${API_URL}/governance/config`, { key: 'GITHUB_REPO_URL', value: githubConfig.repoUrl, description: 'GitHub Repository URL', projectId: currentProject.id, environment: selectedEnv });
+            await axios.post(`${API_URL}/governance/config`, { key: 'GITHUB_TOKEN', value: githubConfig.token, description: 'GitHub Personal Access Token', isSecret: true, projectId: currentProject.id, environment: selectedEnv });
             setInitialGithubConfig(githubConfig);
-            showToast('Configuración GitHub guardada exitosamente.', 'success');
+            showToast('GitHub configuration saved successfully.', 'success');
         } catch (e) {
             console.error(e);
-            showToast('Error al guardar la configuración GitHub.', 'error');
+            showToast('Error saving GitHub configuration.', 'error');
         }
     };
 
     const fetchDomains = async () => {
+        if (!currentProject) return;
         try {
-            const res = await axios.get(`${API_URL}/governance/domains`);
+            const res = await axios.get(`${API_URL}/governance/domains`, { params: { projectId: currentProject.id } });
             setDomains(res.data);
         } catch (e) { console.error(e); }
     };
@@ -172,15 +221,15 @@ export const SettingsPanel: React.FC = () => {
     };
 
     const handleAddDomain = async () => {
-        if (!newDomain.name) return;
+        if (!newDomain.name || !currentProject) return;
         try {
-            await axios.post(`${API_URL}/governance/domains`, newDomain);
+            await axios.post(`${API_URL}/governance/domains`, { ...newDomain, projectId: currentProject.id });
             setNewDomain({ name: '', description: '', owner: '' });
             fetchDomains();
-            showToast('Dominio agregado.', 'success');
+            showToast('Domain added.', 'success');
         } catch (e) {
             console.error(e);
-            showToast('Error al agregar dominio.', 'error');
+            showToast('Error adding domain.', 'error');
         }
     };
 
@@ -190,10 +239,32 @@ export const SettingsPanel: React.FC = () => {
             await axios.post(`${API_URL}/governance/rules`, newRule);
             setNewRule({ patternName: '', ticketTemplate: '', targetLayer: 'Backend API' });
             fetchRules();
-            showToast('Regla agregada.', 'success');
+            showToast('Rule added.', 'success');
         } catch (e) {
             console.error(e);
-            showToast('Error al agregar regla.', 'error');
+            showToast('Error adding rule.', 'error');
+        }
+    };
+
+    const handleEditRuleClick = async (id: string) => {
+        try {
+            const res = await axios.get(`${API_URL}/governance/rules/${id}`);
+            setEditingRule(res.data);
+        } catch (e) {
+            console.error(e);
+            showToast('Error loading rule.', 'error');
+        }
+    };
+
+    const handleUpdateRule = async (rule: MigrationRule) => {
+        try {
+            await axios.put(`${API_URL}/governance/rules/${rule.id}`, rule);
+            setEditingRule(null);
+            fetchRules();
+            showToast('Rule updated.', 'success');
+        } catch (e) {
+            console.error(e);
+            showToast('Error updating rule.', 'error');
         }
     };
 
@@ -221,6 +292,12 @@ export const SettingsPanel: React.FC = () => {
 
             <div className="flex border-b border-slate-100 overflow-x-auto">
                 <button
+                    onClick={() => setActiveTab('general')}
+                    className={`px-6 py-3 text-sm font-medium whitespace-nowrap ${activeTab === 'general' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                    General
+                </button>
+                <button
                     onClick={() => setActiveTab('domains')}
                     className={`px-6 py-3 text-sm font-medium whitespace-nowrap ${activeTab === 'domains' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-500 hover:text-slate-700'}`}
                 >
@@ -247,6 +324,52 @@ export const SettingsPanel: React.FC = () => {
             </div>
 
             <div className="p-6 flex-1 overflow-y-auto">
+                {activeTab === 'general' && (
+                    <div className="max-w-xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Project Name</label>
+                                <input
+                                    className="w-full p-2 border rounded-lg"
+                                    value={projectSettings.name}
+                                    onChange={e => setProjectSettings({ ...projectSettings, name: e.target.value })}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                                <textarea
+                                    className="w-full p-2 border rounded-lg h-24"
+                                    value={projectSettings.description}
+                                    onChange={e => setProjectSettings({ ...projectSettings, description: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    onClick={handleUpdateProject}
+                                    className="bg-slate-900 text-white px-6 py-2 rounded-lg font-medium hover:bg-slate-800 transition"
+                                >
+                                    Update Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="pt-8 border-t border-red-100">
+                            <div className="bg-red-50 p-4 rounded-xl border border-red-100">
+                                <h3 className="font-bold text-red-900 mb-2">Danger Zone</h3>
+                                <p className="text-sm text-red-700 mb-4">
+                                    Deleting this project will permanently remove all analysis results, configurations, and data associated with it. This action cannot be undone.
+                                </p>
+                                <button
+                                    onClick={handleDeleteProject}
+                                    className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition flex items-center gap-2"
+                                >
+                                    <Trash2 size={16} /> Delete Project
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {activeTab === 'domains' && (
                     <div className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -283,55 +406,117 @@ export const SettingsPanel: React.FC = () => {
 
                 {activeTab === 'rules' && (
                     <div className="space-y-6">
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-                            <div className="grid grid-cols-2 gap-4">
-                                <input
-                                    placeholder="Pattern Name (e.g. Cursor_Logic)"
-                                    className="p-2 border rounded"
-                                    value={newRule.patternName}
-                                    onChange={e => setNewRule({ ...newRule, patternName: e.target.value })}
-                                />
-                                <select
-                                    className="p-2 border rounded"
-                                    value={newRule.targetLayer}
-                                    onChange={e => setNewRule({ ...newRule, targetLayer: e.target.value })}
-                                >
-                                    <option>Backend API</option>
-                                    <option>Frontend Component</option>
-                                    <option>Database</option>
-                                </select>
-                            </div>
-                            <textarea
-                                placeholder="Start writing your ticket template in Markdown..."
-                                className="w-full p-2 border rounded h-24"
-                                value={newRule.ticketTemplate}
-                                onChange={e => setNewRule({ ...newRule, ticketTemplate: e.target.value })}
-                            />
-                            <button onClick={handleAddRule} className="w-full bg-blue-600 text-white rounded py-2 font-medium hover:bg-blue-700 flex items-center justify-center gap-2">
-                                <Save size={18} /> Save Rule Template
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            {rules.map(r => (
-                                <div key={r.id} className="p-5 border border-slate-200 rounded-xl bg-white">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div>
-                                            <h4 className="font-bold text-slate-800">{r.patternName}</h4>
-                                            <span className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600 mt-1 inline-block">{r.targetLayer}</span>
-                                        </div>
-                                    </div>
-                                    <pre className="bg-slate-50 p-3 rounded text-xs text-slate-600 overflow-x-auto border border-slate-100 mt-3 whitespace-pre-wrap">
-                                        {r.ticketTemplate}
-                                    </pre>
+                        {/* Edit Mode */}
+                        {editingRule ? (
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 animate-in fade-in slide-in-from-right-8">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="font-bold text-slate-800">Edit Rule</h3>
+                                    <button onClick={() => setEditingRule(null)} className="text-slate-500 hover:text-slate-700 text-sm">Cancel</button>
                                 </div>
-                            ))}
-                        </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <input
+                                        placeholder="Pattern Name"
+                                        className="p-2 border rounded"
+                                        value={editingRule.patternName}
+                                        onChange={e => setEditingRule({ ...editingRule, patternName: e.target.value })}
+                                    />
+                                    <select
+                                        className="p-2 border rounded"
+                                        value={editingRule.targetLayer}
+                                        onChange={e => setEditingRule({ ...editingRule, targetLayer: e.target.value })}
+                                    >
+                                        <option>Backend API</option>
+                                        <option>Frontend Component</option>
+                                        <option>Database</option>
+                                    </select>
+                                </div>
+                                <textarea
+                                    className="w-full p-2 border rounded h-64 font-mono text-sm"
+                                    value={editingRule.ticketTemplate}
+                                    onChange={e => setEditingRule({ ...editingRule, ticketTemplate: e.target.value })}
+                                />
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={() => handleUpdateRule(editingRule)} className="bg-blue-600 text-white px-4 py-2 rounded font-medium hover:bg-blue-700 flex items-center gap-2">
+                                        <Save size={16} /> Save Changes
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                {/* Create New Rule */}
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+                                    <h3 className="font-bold text-slate-700 text-sm">Create New Rule</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <input
+                                            placeholder="Pattern Name (e.g. Cursor_Logic)"
+                                            className="p-2 border rounded"
+                                            value={newRule.patternName}
+                                            onChange={e => setNewRule({ ...newRule, patternName: e.target.value })}
+                                        />
+                                        <select
+                                            className="p-2 border rounded"
+                                            value={newRule.targetLayer}
+                                            onChange={e => setNewRule({ ...newRule, targetLayer: e.target.value })}
+                                        >
+                                            <option>Backend API</option>
+                                            <option>Frontend Component</option>
+                                            <option>Database</option>
+                                        </select>
+                                    </div>
+                                    <textarea
+                                        placeholder="Start writing your ticket template in Markdown..."
+                                        className="w-full p-2 border rounded h-24"
+                                        value={newRule.ticketTemplate}
+                                        onChange={e => setNewRule({ ...newRule, ticketTemplate: e.target.value })}
+                                    />
+                                    <button onClick={handleAddRule} className="w-full bg-blue-600 text-white rounded py-2 font-medium hover:bg-blue-700 flex items-center justify-center gap-2">
+                                        <Plus size={18} /> Add Rule
+                                    </button>
+                                </div>
+
+                                {/* Rules List */}
+                                <div className="space-y-3">
+                                    {rules.map(r => (
+                                        <div key={r.id} className="p-4 border border-slate-200 rounded-xl bg-white hover:shadow-md transition flex justify-between items-center group">
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <h4 className="font-bold text-slate-800">{r.patternName}</h4>
+                                                    <span className="text-xs bg-slate-100 px-2 py-0.5 rounded text-slate-600">{r.targetLayer}</span>
+                                                </div>
+                                                <p className="text-sm text-slate-500 mt-1 line-clamp-1">
+                                                    {r.ticketTemplate.substring(0, 100)}...
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={() => handleEditRuleClick(r.id)}
+                                                className="text-blue-600 hover:text-blue-800 font-medium text-sm px-3 py-1 rounded hover:bg-blue-50 transition"
+                                            >
+                                                Edit
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
                 {activeTab === 'integrations' && (
                     <div className="max-w-xl mx-auto space-y-8">
+                        <div className="flex justify-center pb-4">
+                            <div className="bg-slate-100 p-1 rounded-lg flex gap-1">
+                                {['DEV', 'QA', 'PROD'].map(env => (
+                                    <button
+                                        key={env}
+                                        onClick={() => setSelectedEnv(env)}
+                                        className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${selectedEnv === env ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                                    >
+                                        {env}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div className="space-y-4">
                             <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
                                 <h3 className="font-bold text-blue-900 mb-2 flex items-center gap-2">

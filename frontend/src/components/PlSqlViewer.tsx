@@ -3,7 +3,7 @@ import { Code, Search, Share2, ArrowRight, Sparkles, Loader } from 'lucide-react
 import axios from 'axios';
 import { useProject } from '../context/ProjectContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface PlSqlViewerProps {
     triggers: any[];
@@ -53,7 +53,7 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                     <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
                     <input
                         type="text"
-                        placeholder="Buscar Trigger o Program Unit..."
+                        placeholder="Search Trigger or Program Unit..."
                         className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -80,9 +80,9 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                     <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">{t.parentBlock}</span>
                                 </div>
                                 <div className="flex justify-between items-end mt-2">
-                                    <span className="text-xs text-slate-400">{t.loc} líneas</span>
+                                    <span className="text-xs text-slate-400">{t.loc} lines</span>
                                     <span className="text-[10px] text-blue-600 font-medium opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                                        Ver Código <ArrowRight size={10} />
+                                        View Code <ArrowRight size={10} />
                                     </span>
                                 </div>
                                 <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -90,7 +90,7 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                         onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Trigger: ${t.name}`, `Analyze and refactor logic for trigger ${t.name} in block ${t.parentBlock}. LOC: ${t.loc}`); }}
                                         className="flex-1 text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition"
                                     >
-                                        Crear Ticket
+                                        Create Ticket
                                     </button>
                                     <button
                                         onClick={(e) => handleExplain(t, 'Trigger', e)}
@@ -98,7 +98,7 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                         className="flex-1 text-center text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 py-1 rounded transition flex justify-center items-center gap-1"
                                     >
                                         {explaining === t.name ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                        {explaining === t.name ? 'Analizando...' : 'Explicar IA'}
+                                        {explaining === t.name ? 'Analyzing...' : 'Explain (AI)'}
                                     </button>
                                 </div>
                             </div>
@@ -126,9 +126,9 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                     </button>
                                 </div>
                                 <div className="flex justify-between items-end mt-2">
-                                    <span className="text-xs text-slate-400">{p.loc} líneas</span>
+                                    <span className="text-xs text-slate-400">{p.loc} lines</span>
                                     <span className="text-[10px] text-blue-600 font-medium opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                                        Ver Código <ArrowRight size={10} />
+                                        View Code <ArrowRight size={10} />
                                     </span>
                                 </div>
                                 <div className="mt-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -136,7 +136,7 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                         onClick={(e) => { e.stopPropagation(); createDevOpsTicket(`Refactor Program Unit: ${p.name}`, `Logic extraction for ${p.name}. LOC: ${p.loc}`); }}
                                         className="flex-1 text-center text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 py-1 rounded transition"
                                     >
-                                        Crear Ticket
+                                        Create Ticket
                                     </button>
                                     <button
                                         onClick={(e) => handleExplain(p, 'Program Unit', e)}
@@ -144,7 +144,7 @@ export const PlSqlViewer: React.FC<PlSqlViewerProps> = ({ triggers = [], program
                                         className="flex-1 text-center text-xs text-purple-600 bg-purple-50 hover:bg-purple-100 py-1 rounded transition flex justify-center items-center gap-1"
                                     >
                                         {explaining === p.name ? <Loader size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                        {explaining === p.name ? 'Analizando...' : 'Explicar IA'}
+                                        {explaining === p.name ? 'Analyzing...' : 'Explain (AI)'}
                                     </button>
                                 </div>
                             </div>

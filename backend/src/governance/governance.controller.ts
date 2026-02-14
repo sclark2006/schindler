@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Body, UseGuards, Query, Param } from '@nestjs/common';
 import { GovernanceService } from './governance.service';
 import { DiscoveredService } from './entities/discovered-service.entity';
 import { SystemConfig } from './entities/system-config.entity';
@@ -12,8 +12,8 @@ export class GovernanceController {
     constructor(private readonly governanceService: GovernanceService) { }
 
     @Get('services')
-    findAll(): Promise<DiscoveredService[]> {
-        return this.governanceService.findAll();
+    findAll(@Query('projectId') projectId: string): Promise<DiscoveredService[]> {
+        return this.governanceService.findAll(projectId);
     }
 
     @Post('register')
@@ -27,13 +27,13 @@ export class GovernanceController {
     }
 
     @Post('config')
-    async saveConfig(@Body() body: { key: string; value: string; description?: string; isSecret?: boolean; projectId?: string }): Promise<SystemConfig> {
-        return this.governanceService.saveConfig(body.key, body.value, body.description, body.isSecret, body.projectId);
+    async saveConfig(@Body() body: { key: string; value: string; description?: string; isSecret?: boolean; projectId?: string; environment?: string }): Promise<SystemConfig> {
+        return this.governanceService.saveConfig(body.key, body.value, body.description, body.isSecret, body.projectId, body.environment);
     }
 
     @Get('domains')
-    async getDomains(): Promise<BusinessDomain[]> {
-        return this.governanceService.getDomains();
+    async getDomains(@Query('projectId') projectId: string): Promise<BusinessDomain[]> {
+        return this.governanceService.getDomains(projectId);
     }
 
     @Post('domains')
@@ -49,5 +49,15 @@ export class GovernanceController {
     @Post('rules')
     async createRule(@Body() body: Partial<MigrationRule>): Promise<MigrationRule> {
         return this.governanceService.createRule(body);
+    }
+
+    @Get('rules/:id')
+    async getRule(@Param('id') id: string): Promise<MigrationRule> {
+        return this.governanceService.getRule(id);
+    }
+
+    @Put('rules/:id')
+    async updateRule(@Param('id') id: string, @Body() body: Partial<MigrationRule>): Promise<MigrationRule> {
+        return this.governanceService.updateRule(id, body);
     }
 }

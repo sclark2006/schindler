@@ -99,8 +99,8 @@ npm test
 ## 🔮 Roadmap & Future Features
 
 ### 🛠 Improvements
-- [ ] **Navigation**: Link the application title ("Schindler") to the selected project's dashboard.
-- [ ] **Localization**: Standardize all application labels to English for global consistency.
+- [x] **Navigation**: Link the application title ("Schindler") to the selected project's dashboard.
+- [x] **Localization**: Standardize all application labels to English for global consistency.
 
 ### 🚀 Planned Features
 

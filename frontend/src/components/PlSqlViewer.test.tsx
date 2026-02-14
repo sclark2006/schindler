@@ -55,12 +55,12 @@ describe('PlSqlViewer AI', () => {
         // But it is initially hidden in the UI (opacity 0). FireEvent.click might still work if it's in the DOM.
         // Let's try to find it.
 
-        const buttons = screen.getAllByText('Explicar IA');
+        const buttons = screen.getAllByText('Explain (AI)');
         const triggerButton = buttons[0];
 
         fireEvent.click(triggerButton);
 
-        expect(await screen.findByText('Analizando...')).toBeInTheDocument();
+        expect(await screen.findByText('Analyzing...')).toBeInTheDocument();
 
         await waitFor(() => {
             expect(setSelectedItem).toHaveBeenCalledWith(expect.objectContaining({

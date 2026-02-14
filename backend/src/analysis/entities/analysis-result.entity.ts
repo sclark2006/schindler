@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne, OneToMany } from 'typeorm';
 import { Project } from '../../governance/entities/project.entity';
+import { Recommendation } from '../../ai/entities/recommendation.entity';
 
 @Entity()
 export class AnalysisResult {
@@ -23,6 +24,9 @@ export class AnalysisResult {
 
     @Column()
     complexityLevel: string;
+
+    @OneToMany(() => Recommendation, (rec) => rec.analysisResult)
+    recommendations: Recommendation[];
 
     @CreateDateColumn()
     createdAt: Date;

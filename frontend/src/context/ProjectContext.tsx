@@ -25,7 +25,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [currentProject, setCurrentProject] = useState<Project | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const API_URL = import.meta.env.VITE_API_URL;
 
     const fetchProjects = async () => {
         if (!token) return;

@@ -1,11 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, ManyToOne } from 'typeorm';
+import { Project } from './project.entity';
 
 @Entity()
 export class BusinessDomain {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column({ unique: true })
+    @Column()
     name: string; // e.g., "Finance", "HR"
 
     @Column({ nullable: true })
@@ -13,6 +14,12 @@ export class BusinessDomain {
 
     @Column({ nullable: true })
     owner: string; // e.g., "Team A"
+
+    @Column({ nullable: true })
+    projectId: string;
+
+    @ManyToOne(() => Project, (project) => project.domains)
+    project: Project;
 
     @CreateDateColumn()
     createdAt: Date;

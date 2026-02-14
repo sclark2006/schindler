@@ -40,7 +40,7 @@ describe('AnalysisDashboard AI', () => {
             currentProject: mockProject
         });
 
-        mockedAxios.post.mockResolvedValue({ data: { text: 'AI Summary' } });
+        mockedAxios.post.mockResolvedValue({ data: { summary: 'AI Summary' } });
 
         render(
             <AnalysisDashboard
@@ -51,7 +51,7 @@ describe('AnalysisDashboard AI', () => {
             />
         );
 
-        const button = screen.getByText('Generar Resumen');
+        const button = screen.getByText('Generate Summary');
         fireEvent.click(button);
 
         await waitFor(() => {
@@ -59,10 +59,12 @@ describe('AnalysisDashboard AI', () => {
         });
 
         expect(mockedAxios.post).toHaveBeenCalledWith(
-            expect.stringContaining('/ai/generate'),
+            expect.stringContaining('/ai/summary/test-project-id'),
             expect.objectContaining({
-                projectId: 'test-project-id',
-                context: 'dashboard-summary'
+                complexity: 100,
+                level: 'High',
+                totalBlocks: 5,
+                loc: 500
             })
         );
     });

@@ -15,6 +15,9 @@ export class SystemConfig {
     @Column({ default: false })
     isSecret: boolean; // If true, value should be masked in UI
 
+    @Column({ default: 'DEV' })
+    environment: string; // 'DEV', 'QA', 'PROD'
+
     @UpdateDateColumn()
     updatedAt: Date;
 

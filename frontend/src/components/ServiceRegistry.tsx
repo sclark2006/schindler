@@ -12,16 +12,22 @@ interface DiscoveredService {
     createdAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
+
+import { useProject } from '../context/ProjectContext';
 
 export const ServiceRegistry: React.FC = () => {
     const [services, setServices] = useState<DiscoveredService[]>([]);
     const [loading, setLoading] = useState(false);
+    const { currentProject } = useProject();
 
     const fetchServices = async () => {
+        if (!currentProject) return;
         setLoading(true);
         try {
-            const response = await axios.get(`${API_URL}/governance/services`);
+            const response = await axios.get(`${API_URL}/governance/services`, {
+                params: { projectId: currentProject.id }
+            });
             setServices(response.data);
         } catch (error) {
             console.error('Error fetching services:', error);
@@ -32,7 +38,7 @@ export const ServiceRegistry: React.FC = () => {
 
     useEffect(() => {
         fetchServices();
-    }, []);
+    }, [currentProject]);
 
     return (
         <div className="space-y-6">
@@ -72,8 +78,8 @@ export const ServiceRegistry: React.FC = () => {
                                     <td className="p-4 font-medium text-slate-800">{service.originalName}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${service.sourceType === 'RECORD_GROUP' ? 'bg-blue-100 text-blue-700' :
-                                                service.sourceType === 'PROGRAM_UNIT' ? 'bg-purple-100 text-purple-700' :
-                                                    'bg-orange-100 text-orange-700'
+                                            service.sourceType === 'PROGRAM_UNIT' ? 'bg-purple-100 text-purple-700' :
+                                                'bg-orange-100 text-orange-700'
                                             }`}>
                                             {service.sourceType}
                                         </span>

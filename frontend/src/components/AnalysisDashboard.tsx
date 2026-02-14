@@ -3,7 +3,7 @@ import { Zap, ArrowRight, Share2, Cpu, BarChart2, Database, Code, CheckCircle, S
 import axios from 'axios';
 import { useProject } from '../context/ProjectContext';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL;
 
 interface CardProps {
     title: string;
@@ -35,12 +35,14 @@ interface AnalysisDashboardProps {
 export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisResult, registerService, setSelectedItem, getRecommendations }) => {
     const { currentProject } = useProject();
     const [summary, setSummary] = useState<string>(analysisResult.summary || '');
+    const [isExpanded, setIsExpanded] = useState<boolean>(true);
     const [loadingSummary, setLoadingSummary] = useState(false);
 
     // Update local summary if prop changes (e.g. parent refresh)
     React.useEffect(() => {
         if (analysisResult.summary) {
             setSummary(analysisResult.summary);
+            setIsExpanded(true);
         }
     }, [analysisResult.summary]);
 
@@ -68,6 +70,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
 
             const res = await axios.post(`${API_URL}/ai/summary/${currentProject.id}`, contextData);
             setSummary(res.data.summary);
+            setIsExpanded(true);
         } catch (e) {
             console.error(e);
             setSummary('Error generando el resumen. Verifica la configuración de IA.');
@@ -87,48 +90,50 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
                     <div className="flex justify-between items-start mb-4">
                         <h3 className="text-lg font-bold text-indigo-900 flex items-center gap-2">
                             <Sparkles className="text-purple-600" size={20} />
-                            Análisis Inteligente (AI)
+                            Intelligent Analysis (AI)
                         </h3>
-                        {!summary && !loadingSummary && (
-                            <button
-                                onClick={generateSummary}
-                                className="bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-white/80 transition flex items-center gap-2"
-                            >
-                                <Sparkles size={16} /> Generar Resumen
-                            </button>
-                        )}
+                        <div className="flex gap-2">
+                            {summary && !loadingSummary && (
+                                <button
+                                    onClick={() => setIsExpanded(!isExpanded)}
+                                    className="bg-white/50 text-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm hover:bg-white/80 transition"
+                                >
+                                    {isExpanded ? 'Hide' : 'View Summary'}
+                                </button>
+                            )}
+                            {(!summary || isExpanded) && !loadingSummary && (
+                                <button
+                                    onClick={generateSummary}
+                                    className="bg-white text-indigo-600 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-white/80 transition flex items-center gap-2"
+                                >
+                                    <Sparkles size={16} /> {summary ? 'Regenerate' : 'Generate Summary'}
+                                </button>
+                            )}
+                        </div>
                     </div>
 
                     {loadingSummary && (
                         <div className="flex items-center gap-3 text-indigo-700 animate-pulse">
                             <Loader className="animate-spin" size={20} />
-                            <span className="text-sm font-medium">Analizando métricas y generando insights...</span>
+                            <span className="text-sm font-medium">Analyzing metrics and generating insights...</span>
                         </div>
                     )}
 
-                    {summary && (
+                    {summary && isExpanded && (
                         <div className="bg-white/60 p-4 rounded-xl backdrop-blur-sm border border-white/50 animate-in fade-in slide-in-from-bottom-2">
                             <p className="text-indigo-900 text-sm leading-relaxed whitespace-pre-wrap">
                                 {summary}
                             </p>
-                            <div className="mt-3 flex justify-end">
-                                <button
-                                    onClick={() => setSummary('')}
-                                    className="text-xs text-indigo-400 hover:text-indigo-600 underline"
-                                >
-                                    Ocultar
-                                </button>
-                            </div>
                         </div>
                     )}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card title="Puntos de Función" value={Number(analysisResult.complexityScore || 0).toFixed(0)} sub="Score Calculado" icon={<Cpu className="text-purple-500" />} />
-                <Card title="Nivel de Complejidad" value={analysisResult.complexityLevel || 'N/A'} sub="Categoría" icon={<BarChart2 className="text-blue-500" />} />
-                <Card title="Bloques / Tablas" value={analysisResult.parsedData?.stats?.totalBlocks || 0} sub="Entidades de Datos" icon={<Database className="text-green-500" />} />
-                <Card title="Líneas PL/SQL" value={analysisResult.parsedData?.stats?.totalLoc || 0} sub="Total Código Legacy" icon={<Code className="text-orange-500" />} />
+                <Card title="Function Points" value={Number(analysisResult.complexityScore || 0).toFixed(0)} sub="Calculated Score" icon={<Cpu className="text-purple-500" />} />
+                <Card title="Complexity Level" value={analysisResult.complexityLevel || 'N/A'} sub="Category" icon={<BarChart2 className="text-blue-500" />} />
+                <Card title="Blocks / Tables" value={analysisResult.parsedData?.stats?.totalBlocks || 0} sub="Data Entities" icon={<Database className="text-green-500" />} />
+                <Card title="PL/SQL Lines" value={analysisResult.parsedData?.stats?.totalLoc || 0} sub="Total Legacy Code" icon={<Code className="text-orange-500" />} />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -138,11 +143,11 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                             <Zap size={20} className="text-amber-500" />
-                            Candidatos a Refactorización Compleja
+                            Complex Refactoring Candidates
                         </h3>
                         <div className="space-y-3 max-h-[400px] overflow-y-auto">
                             {(!analysisResult.parsedData?.complexityCandidates || analysisResult.parsedData.complexityCandidates.length === 0) ? (
-                                <p className="text-slate-500 italic">No se detectaron patrones complejos obvios.</p>
+                                <p className="text-slate-500 italic">No obvious complex patterns detected.</p>
                             ) : (
                                 analysisResult.parsedData.complexityCandidates.map((c: any, i: number) => (
                                     <div
@@ -168,9 +173,9 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
                                             </div>
                                         </div>
                                         <div className="flex justify-between items-end mt-1">
-                                            <p className="text-xs text-slate-600">Tipo: {c.type} | Razón: {c.reason}</p>
+                                            <p className="text-xs text-slate-600">Type: {c.type} | Reason: {c.reason}</p>
                                             <span className="text-[10px] text-blue-600 font-medium opacity-0 group-hover:opacity-100 flex items-center gap-1">
-                                                Ver Detalle <ArrowRight size={10} />
+                                                View Detail <ArrowRight size={10} />
                                             </span>
                                         </div>
                                     </div>
@@ -185,7 +190,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                             <CheckCircle size={20} className="text-green-600" />
-                            Estrategia de Migración Sugerida
+                            Suggested Migration Strategy
                         </h3>
                         <div className="space-y-3">
                             {getRecommendations(analysisResult).map((rec, i) => (
