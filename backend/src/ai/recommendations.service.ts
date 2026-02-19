@@ -18,7 +18,23 @@ export class RecommendationsService {
         if (blockName) {
             where.blockName = blockName;
         }
-        return this.repo.find({ where, order: { createdAt: 'DESC' } });
+        const recs = await this.repo.find({ where, order: { createdAt: 'DESC' } });
+
+        const methodOrder: Record<string, number> = { 'GET': 1, 'POST': 2, 'PUT': 3, 'PATCH': 4, 'DELETE': 5 };
+
+        return recs.sort((a, b) => {
+            const orderA = methodOrder[a.method] || 99;
+            const orderB = methodOrder[b.method] || 99;
+
+            if (orderA !== orderB) return orderA - orderB;
+
+            // If methods are same, sort GET by URL length (shortest first -> root resource)
+            if (a.method === 'GET' && b.method === 'GET') {
+                return a.url.length - b.url.length;
+            }
+
+            return 0;
+        });
     }
 
     async createOrUpdate(analysisId: string, data: Partial<Recommendation>[]): Promise<Recommendation[]> {

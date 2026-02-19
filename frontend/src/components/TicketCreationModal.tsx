@@ -12,9 +12,10 @@ interface TicketCreationModalProps {
     initialDescription: string;
     projectId?: string;
     onSuccess?: (ticketData: any) => void;
+    serviceData?: any; // Data required for Register as Existent
 }
 
-export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen, onClose, initialTitle, initialDescription, projectId, onSuccess }) => {
+export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen, onClose, initialTitle, initialDescription, projectId, onSuccess, serviceData }) => {
     if (!isOpen) return null;
 
     const { token } = useAuth();
@@ -22,6 +23,7 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
     const [description, setDescription] = useState(initialDescription);
     const [type, setType] = useState('User Story');
     const [provider, setProvider] = useState<'ADO' | 'GITHUB' | null>(null);
+    const [format, setFormat] = useState<'Markdown' | 'HTML' | 'Plain Text'>('Markdown');
     const [availableProviders, setAvailableProviders] = useState<{ ado: boolean; github: boolean }>({ ado: false, github: false });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -57,8 +59,8 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
 
             setAvailableProviders({ ado: hasAdo, github: hasGithub });
 
-            if (hasGithub && !hasAdo) setProvider('GITHUB');
-            else if (hasAdo) setProvider('ADO'); // Default to ADO if both or only ADO
+            if (hasGithub && !hasAdo) { setProvider('GITHUB'); setFormat('Markdown'); }
+            else if (hasAdo) { setProvider('ADO'); setFormat('HTML'); } // Default to ADO if both or only ADO
             else setProvider(null);
 
         } catch (e: any) {
@@ -116,6 +118,7 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
                 ${context}
                 
                 Make it professional, add acceptance criteria if missing, and ensure technical clarity.
+                Output the description in ${format} format.
                 Return JSON with { title, description }.`,
                 context: 'ticket-improvement'
             });
@@ -194,6 +197,41 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
         } catch (err: any) {
             console.error(err);
             setError(err.response?.data?.message || 'Error creating ticket.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegisterAsExistent = async () => {
+        if (!serviceData || !projectId) return;
+        setLoading(true);
+        try {
+            await axios.post(`${API_URL}/discovered-services/register`, {
+                projectId,
+                originalName: serviceData.originalName,
+                sourceType: serviceData.sourceType,
+                method: serviceData.method,
+                domain: serviceData.domain,
+                endpoint: serviceData.endpoint,
+                dataSource: serviceData.dataSource,
+                dataSourceType: serviceData.dataSourceType,
+                proposedServiceName: serviceData.proposedServiceName,
+                // Ticket info is skipped for existent services or handled by backend logic for 'MIGRATED' status
+            }, { headers: { Authorization: `Bearer ${token}` } });
+
+            setSuccess('Service registered as existent.');
+
+            if (onSuccess) {
+                onSuccess({ status: 'MIGRATED' }); // Mock ticket data for callback
+            }
+
+            setTimeout(() => {
+                onClose();
+                setSuccess(null);
+            }, 1500);
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.message || 'Error registering service.');
         } finally {
             setLoading(false);
         }
@@ -278,7 +316,7 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
                                         type="radio"
                                         name="provider"
                                         checked={provider === 'ADO'}
-                                        onChange={() => setProvider('ADO')}
+                                        onChange={() => { setProvider('ADO'); setFormat('HTML'); }}
                                         className="text-blue-600 focus:ring-blue-500"
                                     />
                                     <span className="text-sm font-medium text-slate-700">Azure DevOps</span>
@@ -288,13 +326,27 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
                                         type="radio"
                                         name="provider"
                                         checked={provider === 'GITHUB'}
-                                        onChange={() => setProvider('GITHUB')}
+                                        onChange={() => { setProvider('GITHUB'); setFormat('Markdown'); }}
                                         className="text-blue-600 focus:ring-blue-500"
                                     />
                                     <span className="text-sm font-medium text-slate-700">GitHub</span>
                                 </label>
                             </div>
                         )}
+
+                        {/* Format Selection */}
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Description Format</label>
+                            <select
+                                className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                value={format}
+                                onChange={(e) => setFormat(e.target.value as any)}
+                            >
+                                <option value="Markdown">Markdown (Best for GitHub)</option>
+                                <option value="HTML">HTML (Best for Azure DevOps)</option>
+                                <option value="Plain Text">Plain Text</option>
+                            </select>
+                        </div>
 
                         {/* Ticket Type - First field */}
                         <div>
@@ -349,6 +401,18 @@ export const TicketCreationModal: React.FC<TicketCreationModalProps> = ({ isOpen
                     >
                         Cancel
                     </button>
+                    {serviceData && (
+                        <button
+                            type="button"
+                            onClick={handleRegisterAsExistent}
+                            disabled={loading}
+                            className="px-4 py-2 border border-slate-300 text-slate-700 font-medium hover:bg-slate-100 rounded-lg transition mr-auto flex items-center gap-2"
+                            title="Register this service without creating a new ticket"
+                        >
+                            <BookOpen size={16} />
+                            Register as Existent
+                        </button>
+                    )}
                     <button
                         type="submit"
                         form="ticket-form"

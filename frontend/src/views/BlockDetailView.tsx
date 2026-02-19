@@ -422,7 +422,17 @@ export const BlockDetailView: React.FC<BlockDetailViewProps> = ({ analysisResult
                 initialTitle={selectedRec ? `[BE] Implement ${selectedRec.serviceName}` : ''}
                 initialDescription={selectedRec ? selectedRec.description : ''}
                 projectId={currentProject?.id}
-                onSuccess={onTicketCreated} // We need to update TicketCreationModal to accept this prop
+                onSuccess={onTicketCreated}
+                serviceData={selectedRec ? {
+                    originalName: selectedRec.blockName,
+                    sourceType: 'BLOCK',
+                    method: selectedRec.method,
+                    domain: selectedRec.domain,
+                    endpoint: selectedRec.url,
+                    dataSource: selectedRec.blockName,
+                    dataSourceType: 'TABLE',
+                    proposedServiceName: selectedRec.serviceName
+                } : undefined}
             />
         </div>
     );

@@ -410,6 +410,16 @@ export const RecordGroupDetailView: React.FC<RecordGroupDetailViewProps> = ({ an
                 initialDescription={selectedRec ? `**Endpoint:** GET ${selectedRec.url}\n\n${selectedRec.description}` : ''}
                 projectId={currentProject?.id}
                 onSuccess={onTicketCreated}
+                serviceData={selectedRec ? {
+                    originalName: selectedRec.blockName,
+                    sourceType: 'RECORD_GROUP',
+                    method: selectedRec.method,
+                    domain: selectedRec.domain,
+                    endpoint: selectedRec.url,
+                    dataSource: selectedRec.blockName,
+                    dataSourceType: 'QUERY',
+                    proposedServiceName: selectedRec.serviceName
+                } : undefined}
             />
         </div>
     );
