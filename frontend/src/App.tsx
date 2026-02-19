@@ -64,7 +64,7 @@ const AuthenticatedApp: React.FC = () => {
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [selectedBlock, setSelectedBlock] = useState<string | null>(null); // New state for SPA block navigation
     const [selectedRecordGroup, setSelectedRecordGroup] = useState<string | null>(null);
-    const [ticketModal, setTicketModal] = useState({ isOpen: false, title: '', description: '' });
+    const [ticketModal, setTicketModal] = useState<{ isOpen: boolean; title: string; description: string; serviceData?: any }>({ isOpen: false, title: '', description: '' });
     const [showAbout, setShowAbout] = useState(false);
 
     // New: Fetch specific analysis
@@ -89,8 +89,8 @@ const AuthenticatedApp: React.FC = () => {
         }
     };
 
-    const openTicketModal = (title: string, description?: string) => {
-        setTicketModal({ isOpen: true, title, description: description || '' });
+    const openTicketModal = (title: string, description?: string, serviceData?: any) => {
+        setTicketModal({ isOpen: true, title, description: description || '', serviceData });
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -467,6 +467,7 @@ const AuthenticatedApp: React.FC = () => {
                 initialTitle={ticketModal.title}
                 initialDescription={ticketModal.description}
                 projectId={currentProject?.id}
+                serviceData={ticketModal.serviceData}
             />
             <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} />
         </div>
