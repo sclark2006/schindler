@@ -26,10 +26,14 @@ export class AnalysisService {
 
             const data = await this.adapter.parse(xmlContent);
 
-            // Calculate Complexity Score (Generic logic)
-            // (Triggers * 5) + (PUs * 10) + (LOC / 10)
+            // Calculate Complexity Score
+            // (Triggers * 5) + (PUs * 10) + (LOC / 10) + (Blocks * 20) + (Record Groups * 15)
             const stats = data.stats;
-            const complexityScore = (stats.totalTriggers * 5) + (stats.totalProgramUnits * 10) + (stats.totalLoc / 10);
+            const complexityScore = (stats.totalTriggers * 5)
+                + (stats.totalProgramUnits * 10)
+                + (stats.totalLoc / 10)
+                + (stats.totalBlocks * 20)
+                + ((data.recordGroups?.length || 0) * 15);
 
             let complexityLevel = 'Baja';
             if (complexityScore > 500) complexityLevel = 'Muy Alta';

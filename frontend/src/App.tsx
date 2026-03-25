@@ -409,11 +409,10 @@ const AuthenticatedApp: React.FC = () => {
 
                                 {analysisSubTab === 'plsql' && (
                                     <PlSqlViewer
-                                        triggers={analysisResult.parsedData.triggers}
-                                        programUnits={analysisResult.parsedData.programUnits}
+                                        triggers={analysisResult.parsedData?.triggers || []}
+                                        programUnits={analysisResult.parsedData?.programUnits || []}
                                         setSelectedItem={setSelectedItem}
                                         registerService={registerService}
-                                        createDevOpsTicket={openTicketModal}
                                     />
                                 )}
 

@@ -35,14 +35,14 @@ interface AnalysisDashboardProps {
 export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisResult, registerService, setSelectedItem, getRecommendations }) => {
     const { currentProject } = useProject();
     const [summary, setSummary] = useState<string>(analysisResult.summary || '');
-    const [isExpanded, setIsExpanded] = useState<boolean>(true);
+    const [isExpanded, setIsExpanded] = useState<boolean>(false);
     const [loadingSummary, setLoadingSummary] = useState(false);
 
     // Update local summary if prop changes (e.g. parent refresh)
     React.useEffect(() => {
         if (analysisResult.summary) {
             setSummary(analysisResult.summary);
-            setIsExpanded(true);
+            // setIsExpanded(true); // Don't auto-expand on load
         }
     }, [analysisResult.summary]);
 
@@ -78,6 +78,14 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
             setLoadingSummary(false);
         }
     };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 8) return 'text-red-500';
+        if (score >= 5) return 'text-orange-500';
+        return 'text-green-500';
+    };
+
+    const scoreValue = Number(analysisResult.complexityScore || 0);
 
     return (
         <div className="space-y-6">
@@ -130,7 +138,22 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({ analysisRe
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card title="Function Points" value={Number(analysisResult.complexityScore || 0).toFixed(0)} sub="Calculated Score" icon={<Cpu className="text-purple-500" />} />
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-start gap-4">
+                    <div className="bg-slate-50 p-3 rounded-xl">
+                        <Cpu className={getScoreColor(scoreValue)} />
+                    </div>
+                    <div className="w-full">
+                        <h4 className="text-sm font-medium text-slate-500 uppercase tracking-wider">Complexity Score</h4>
+                        <div className={`text-2xl font-bold mt-1 ${getScoreColor(scoreValue)}`}>{scoreValue}/10</div>
+                        <div className="w-full bg-slate-100 rounded-full h-2 mt-2">
+                            <div
+                                className={`h-2 rounded-full ${scoreValue >= 8 ? 'bg-red-500' : scoreValue >= 5 ? 'bg-orange-500' : 'bg-green-500'}`}
+                                style={{ width: `${scoreValue * 10}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+                {/* <Card title="Function Points" value={Number(analysisResult.complexityScore || 0).toFixed(0)} sub="Calculated Score" icon={<Cpu className="text-purple-500" />} /> */}
                 <Card title="Complexity Level" value={analysisResult.complexityLevel || 'N/A'} sub="Category" icon={<BarChart2 className="text-blue-500" />} />
                 <Card title="Blocks / Tables" value={analysisResult.parsedData?.stats?.totalBlocks || 0} sub="Data Entities" icon={<Database className="text-green-500" />} />
                 <Card title="PL/SQL Lines" value={analysisResult.parsedData?.stats?.totalLoc || 0} sub="Total Legacy Code" icon={<Code className="text-orange-500" />} />
